@@ -64,9 +64,24 @@
 - **决策**：E0 动态头继续用自有 h5 加载器（无 lerobot 依赖）；RoboMIND 数据用时自写轻量 v3.0 读取器（parquet+mp4）；SmolVLA（E2）尝试 venv 内 lerobot 1.x --no-deps 安装，失败则自写微调循环
 - 现成 LIBERO LeRobot 源：zeromidnight/libero_goal_lerobot_v3.0（仅 goal 套件）、physical-intelligence/libero（PI 格式 41k 下载，转换用）——备选
 
+### 🔬 E0-v1 验收结论（2026-10-02 tick 3）：**动作被完全忽略** ❌→ 修复中
+- 训练正常收敛（loss 2.56→1.09，cos 1.01→0.20），但诊断（scripts/diag_action_sensitivity.py）显示：
+  **所有动作条件下预测精度完全相同（cos 0.6478）**——真动作/错配/随机/零/×2 全无差异
+- 根因（架构性）：1024 ctx tokens vs 9 action tokens + stride=0 下未来可纯外推 → 动作梯度压力≈0
+- **这正是论文要解决的核心技术点**（PLaW-VLA 批判的动作条件化缺失，隐空间版）
+- **E0-v2 修复包**（已实现并启动训练）：
+  1. 残差跳连：ctx 末帧 tubept → skip_mlp 作“惯性基线”，decoder 学动作驱动增量
+  2. ctx token dropout 0.3（训练时随机擦除，削弱纯外推捷径）
+  3. stride=4（隔 4 帧预测，外推难度上升）
+- 验收标准升级：diag 中 A_true 与 C_random 的 pred-cos 差 ≥ 0.05
+
+### 🔄 运行中（tick 3）
+- E0-v2 训练（GPU0，logs/train_e0v2_k5_s2000.log，1.06s/step，~35min）
+- libero_90 下载（6/100 慢速）；RoboMIND 双包已齐（13G+11G）
+
 ### ⏭️ 下一步（按序）
-1. **E0 训练完成验收**（~step 2000）：幻觉注入比值（>1 才有检测信号）→ 弱则调权重/步数/数据；产出第一版 checkpoint 推 ModelScope
-2. LIBERO demos 齐（libero_10+90 下载中）后重跑 E0 完整版（130 任务全量）
-3. E1 奖励头骨架（GPU1）：自产标注管线（评测农场+check_success）
-4. SmolVLA baseline（GPU1）：lerobot 1.x 尝试 → LIBERO 微调
+1. E0-v2 完成 → 重跑 diag_action_sensitivity（A-C ≥ 0.05 达标；不达标继续迭代：动作 FiLM/更长视距/inverse-dynamics 辅助头）
+2. 达标后：E0 完整版（全量任务）+ checkpoint 推 ModelScope
+3. SmolVLA baseline（GPU1）：自写 Dataset（h5 直读）+ 自训练循环（lerobot 0.4.2 policies/smolvla 可用，避免格式转换）；目标 libero_spatial 非零成功率
+4. E1 奖励头：自产标注管线
 5. Bridge V2 数据源调研

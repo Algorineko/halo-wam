@@ -31,10 +31,12 @@ class LatentDynamicsHead(nn.Module):
         n_heads: int = 16,
         n_layers: int = 6,
         mlp_ratio: float = 4.0,
+        ctx_dropout: float = 0.3,
     ):
         super().__init__()
         self.dim = dim
         self.n_fut_tokens = n_fut_tubelets * 256
+        self.ctx_dropout = ctx_dropout
 
         # future 位置 queries（时间×空间可分离：时间嵌入 + 空间嵌入）
         self.t_pos = nn.Parameter(torch.randn(n_fut_tubelets, dim) * 0.02)
@@ -55,6 +57,8 @@ class LatentDynamicsHead(nn.Module):
         self.decoder = nn.TransformerDecoder(layer, num_layers=n_layers)
         self.norm = nn.LayerNorm(dim)
         self.out_mlp = nn.Sequential(nn.Linear(dim, dim), nn.GELU(), nn.Linear(dim, dim))
+        # E0-v2: 残差跳连——用 ctx 最后一帧 tubept 提供“惯性基线”，decoder 学动作驱动的增量
+        self.skip_mlp = nn.Sequential(nn.Linear(dim, dim), nn.GELU(), nn.Linear(dim, dim))
 
     @staticmethod
     def _space_grid(h: int, w: int) -> torch.Tensor:
@@ -69,14 +73,27 @@ class LatentDynamicsHead(nn.Module):
         return q.to(device=device, dtype=dtype)
 
     def forward(self, ctx_tokens: torch.Tensor, actions: torch.Tensor) -> torch.Tensor:
-        """ctx_tokens: (B, Nc, D)；actions: (B, A, act_dim) padded 对齐。
-        返回 (B, Nf, D) future latent 预测。"""
+        """ctx_tokens: (B, Nc, D)（Nc = T'c*256，row-major 时间在前 → 末 256 token = 最新时刻）；
+        actions: (B, A, act_dim)。返回 (B, Nf, D) future latent 预测。"""
         b = ctx_tokens.shape[0]
         act_tokens = self.act_proj(actions) + self.act_pos.to(actions.dtype)  # (B,A,D)
-        memory = torch.cat([ctx_tokens, act_tokens], dim=1)
+
+        mem = ctx_tokens
+        if self.training and self.ctx_dropout > 0:
+            # E0-v2: 随机丢弃部分 ctx token 特征，削弱“纯上下文外推”捷径
+            keep = torch.rand(b, ctx_tokens.shape[1], 1, device=ctx_tokens.device) > self.ctx_dropout
+            mem = ctx_tokens * keep.to(ctx_tokens.dtype)
+        memory = torch.cat([mem, act_tokens], dim=1)
+
         q = self.future_queries(b, ctx_tokens.device, ctx_tokens.dtype)
         h = self.decoder(q, memory)
-        return self.out_mlp(self.norm(h))
+        out = self.out_mlp(self.norm(h))
+
+        # E0-v2 残差：最新 ctx tubept (Nc-256:) 投影为未来各时刻的惯性基线
+        last = ctx_tokens[:, -256:, :]  # (B,256,D)
+        n_tp = self.n_fut_tokens // 256
+        skip = self.skip_mlp(last).unsqueeze(1).expand(b, n_tp, 256, self.dim).reshape(b, self.n_fut_tokens, self.dim)
+        return out + skip.to(out.dtype)
 
 
 class DynamicsEnsemble(nn.Module):
