@@ -1,0 +1,30 @@
+# secrets
+.env.secrets
+*_token*
+*.token
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# data & checkpoints（大文件走 ModelScope，不入 git）
+data/
+checkpoints/
+outputs/
+wandb/
+runs/
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
