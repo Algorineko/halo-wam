@@ -19,6 +19,8 @@ checkpoints/
 outputs/
 wandb/
 runs/
+logs/
+third_party/
 *.pt
 *.pth
 *.safetensors
