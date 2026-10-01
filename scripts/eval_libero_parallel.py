@@ -22,7 +22,7 @@ _RESULT_DIR = "/home/tione/notebook/home/arianliu/project/halo-wam/eval_results"
 
 def run_one_task(args):
     """子进程：跑一个任务的 n 个 episode，返回成功率。"""
-    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand = args
+    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand, dump_dir = args
     os.environ.setdefault("MUJOCO_GL", "osmesa")
     os.environ.setdefault("PYOPENGL_PLATFORM", "osmesa")
     os.environ.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
@@ -62,6 +62,10 @@ def run_one_task(args):
 
     env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=128, camera_widths=128)
     n_episodes = min(n_episodes, len(init_states))
+    task_dir = None
+    if dump_dir:
+        task_dir = os.path.join(dump_dir, f"task{task_idx:02d}")
+        os.makedirs(task_dir, exist_ok=True)
     successes, steps_total = 0, 0
     rng = np.random.RandomState(seed)
     t0 = time.time()
