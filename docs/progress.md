@@ -30,14 +30,25 @@
 - **协议决策：E0 动态头采用固定窗口相对编码** —— context 窗口与 future 窗口各自独立编码（tubept 均从相对位置 0 起），与 V-JEPA 2-AC / PLaW-VLA 的 future query 协议一致。禁止把"同帧不同偏移应同 latent"当作假设
 - token 排布（源码证实）：conv3d → flatten(2) → (B, T'*16*16, D)，(T',H',W') row-major，reshape (B,T',16,16,D) 正确
 
-### 🔄 运行中 / 进行中
-- LIBERO demos 下载（4 套件，--use-huggingface，logs/dl_libero_all.log）
-- RoboMIND franka_1rgb 下载（68 文件，logs/dl_robomind_franka.log）
-- [ ] validate_encoder.py 第 [4] 项（16 帧双窗口检验）未出结果，下 tick 查
+### 🔄 运行中 / 进行中（2026-10-02 01:15 更新）
+- **E0 K=5 训练**（GPU0, logs/train_e0_k5_s2000_v3.log）：0.97s/step, loss 2.56→1.60↓, cos→0.36↓, ~33min
+- LIBERO demos 下载（4 套件慢速推进，logs/dl_libero_all.log）
+- RoboMIND 公开包下载（bread_in_basket 3.5G/34files + bread_on_table，LeRobot 格式）
+
+### ✅ E0 代码全链路打通（2026-10-02 01:00）
+- `src/halo/data/libero_h5.py`：固定窗口采样管线（13 h5 → 2600 样本，随下载增长）
+- `src/halo/dynamics.py`：LatentDynamicsHead（future queries 交叉注意 [ctx;act] tokens）+ DynamicsEnsemble（K 头 / jepa_loss / epistemic_std）
+- `scripts/train_e0.py`：完整训练循环 + 幻觉注入自检（错配动作 vs 正确动作的 ensemble 分歧比）
+- `scripts/eval_libero_parallel.py`：**384 核评测农场验证通过**（10 tasks×3eps 并行 288s；随机策略 0% 基线；64 workers 下整套 ~12min）
+
+### 🛠️ 新增踩坑
+- **DTK 上 SDPA 无融合核**：fp32 下 nn.TransformerDecoder 激活物化注意力矩阵，K=5×6层×2attn ≈ 32GB → OOM。对策：heads 走 bf16 autocast + PYTORCH_HIP_ALLOC_CONF=expandable_segments:True（44% 显存占用稳定）
+- RoboMIND 主库（x-humanoid-robomind/RoboMIND）受限；公开替代 = BAAI-DataCube 逐任务包（LeRobot v2 格式：parquet+mp4）；franka_1rgb 仅 2 任务公开，franka_3rgb 有 ~15 任务（后续按需下）
+- 数据集字符串 typo 教训：`n_fut_tubelets`（非 tubeplets）
 
 ### ⏭️ 下一步（按序）
-1. 监控两个数据下载完成后校验完整性（h5 可读、任务数对）
-2. src/halo/data/libero_h5.py：LIBERO demo → (context 窗口, actions, future 窗口) 训练样本管线
-3. src/halo/dynamics.py：action-conditioned 动态头（K=5 ensemble 骨架）+ E0 训练循环 configs/
-4. Bridge V2 数据源调研（rail-berkeley/bridge_orig 在镜像不存在，找 OXE/LeRobot 转换版）
-5. 评测农场并行化：384 核 worker 池
+1. E0 训练完成 → 看幻觉注入比值（>1 才有幻觉检测信号）→ 若弱：调 loss 权重/训练步数/数据量
+2. RoboMIND bread 包 inspect：episodes parquet 里有没有 success/failure 标注（E1 奖励头关键）
+3. LIBERO demos 齐后重跑 E0 完整版（40 任务全量）
+4. Bridge V2 数据源调研（找 LeRobot/OXE 转换版）
+5. E1 奖励头骨架（GPU1 空闲可用）

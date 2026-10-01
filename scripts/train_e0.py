@@ -67,12 +67,14 @@ def main():
                 ctx_lat = enc.encode(batch["ctx"])          # (B,T'c,16,16,D) bf16
                 fut_lat = enc.encode(batch["fut"])          # (B,T'f,16,16,D)
             b = ctx_lat.shape[0]
-            ctx_tok = ctx_lat.reshape(b, -1, 1024).float()  # (B, Nc, D)
-            fut_tok = fut_lat.reshape(b, -1, 1024).float()
-            acts = torch.stack(batch["actions"]).to(args.device)  # stride=0 时等长 (B,A,7)
+            ctx_tok = ctx_lat.reshape(b, -1, 1024)          # 保持 bf16（DTK 上 SDPA 走显式矩阵，bf16 省一半）
+            fut_tok = fut_lat.reshape(b, -1, 1024)
+            acts = torch.stack(batch["actions"]).to(args.device).to(ctx_tok.dtype)  # stride=0 时等长 (B,A,7)
 
-            preds = ens(ctx_tok, acts)                      # (K,B,Nf,D)
-            losses = DynamicsEnsemble.jepa_loss(preds, fut_tok)
+            # heads 前向/损失在 bf16 autocast（params fp32 master，优化器状态 fp32）
+            with torch.autocast("cuda", dtype=torch.bfloat16):
+                preds = ens(ctx_tok, acts)                  # (K,B,Nf,D)
+                losses = DynamicsEnsemble.jepa_loss(preds, fut_tok)
             opt.zero_grad(set_to_none=True)
             losses["loss"].backward()
             torch.nn.utils.clip_grad_norm_(ens.parameters(), 1.0)
