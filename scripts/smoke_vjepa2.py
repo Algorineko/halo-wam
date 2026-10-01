@@ -32,21 +32,21 @@ def main():
     n_params = sum(p.numel() for p in model.parameters())
     print(f"[smoke] loaded in {time.time()-t0:.1f}s, params: {n_params/1e6:.1f}M")
 
-    # 随机视频片段 (B, C, T, H, W) —— 256px，tubelet 2×16×16
-    x = torch.randn(args.batch, 3, args.frames, 256, 256, device=args.device, dtype=torch.bfloat16)
+    # 随机视频片段 (B, T, C, H, W) —— VJEPA2 约定帧维在前；256px，tubelet 2×16×16
+    x = torch.randn(args.batch, args.frames, 3, 256, 256, device=args.device, dtype=torch.bfloat16)
     with torch.no_grad():
-        out = model(pixel_values=x)
+        out = model(pixel_values_videos=x)
     hidden = out.last_hidden_state
     print(f"[smoke] input {tuple(x.shape)} -> hidden {tuple(hidden.shape)}, dtype {hidden.dtype}")
 
     # 延迟：warmup 3 + 计时 10
     with torch.no_grad():
         for _ in range(3):
-            model(pixel_values=x)
+            model(pixel_values_videos=x)
         torch.cuda.synchronize()
         t0 = time.time()
         for _ in range(10):
-            model(pixel_values=x)
+            model(pixel_values_videos=x)
         torch.cuda.synchronize()
         dt = (time.time() - t0) / 10
     print(f"[smoke] latency: {dt*1000:.0f} ms/forward (B={args.batch}, T={args.frames})")
