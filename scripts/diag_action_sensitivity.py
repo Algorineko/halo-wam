@@ -12,6 +12,7 @@
 若 A 的 cos 不显著高于 B/C/D → 动作被忽略，需架构干预。
 用法: source scripts/env.sh && python scripts/diag_action_sensitivity.py [ckpt]
 """
+import os
 import sys
 
 import numpy as np
@@ -35,7 +36,16 @@ def main():
     ens.load_state_dict(ck["model"])
     ens.eval()
 
-    ds = LiberoWindowDataset(None, 8, 8, 0, samples_per_demo=2)
+    ds = LiberoWindowDataset(None, 2, 8, 4, samples_per_demo=2)  # 与 v5/e0_prod 训练协议一致
+    if len(sys.argv) > 2:  # 第二参数：只评测留出任务
+        with open(sys.argv[2]) as f:
+            pats = [l.strip() for l in f if l.strip() and not l.startswith("#")]
+        ds.files = [fp for fp in ds.files if any(p in os.path.basename(fp) for p in pats)]
+        ds.index = [(fi, d, t) for fi, d, t in ds.index
+                    if any(p in os.path.basename(ds.files[fi]) for p in pats)]
+        ds.samples = [s for s in ds.samples if any(
+            p in os.path.basename(ds.files[s[0]]) for p in pats)]
+        print(f"[diag] 留出任务模式: {len(ds.files)} files, {len(ds)} samples")
     dl = DataLoader(ds, batch_size=16, shuffle=False, num_workers=4, collate_fn=collate)
 
     stats = {k: {"cos": [], "std": []} for k in ["A_true", "B_mismatch", "C_random", "D_zero", "E_double", "F_noact"]}

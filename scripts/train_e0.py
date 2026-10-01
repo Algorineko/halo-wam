@@ -36,6 +36,7 @@ def parse():
     p.add_argument("--out", type=str, default="checkpoints/e0")
     p.add_argument("--act-weight", type=float, default=1.0, help="动作对比损失权重")
     p.add_argument("--margin", type=float, default=0.1, help="动作对比 margin")
+    p.add_argument("--exclude-file", type=str, default="", help="留出任务列表文件（训练排除）")
     return p.parse_args()
 
 
@@ -44,7 +45,8 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     torch.manual_seed(0)
 
-    ds = LiberoWindowDataset(None, args.ctx_frames, args.fut_frames, args.stride, samples_per_demo=4)
+    ds = LiberoWindowDataset(None, args.ctx_frames, args.fut_frames, args.stride, samples_per_demo=4,
+                             exclude_file=args.exclude_file or None)
     dl = DataLoader(ds, batch_size=args.bs, shuffle=True, num_workers=4, collate_fn=collate, drop_last=True, persistent_workers=True)
     print(f"[e0] dataset: {len(ds.files)} files, {len(ds)} samples")
 
