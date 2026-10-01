@@ -79,9 +79,30 @@
 - E0-v2 训练（GPU0，logs/train_e0v2_k5_s2000.log，1.06s/step，~35min）
 - libero_90 下载（6/100 慢速）；RoboMIND 双包已齐（13G+11G）
 
-### ⏭️ 下一步（按序）
-1. E0-v2 完成 → 重跑 diag_action_sensitivity（A-C ≥ 0.05 达标；不达标继续迭代：动作 FiLM/更长视距/inverse-dynamics 辅助头）
-2. 达标后：E0 完整版（全量任务）+ checkpoint 推 ModelScope
-3. SmolVLA baseline（GPU1）：自写 Dataset（h5 直读）+ 自训练循环（lerobot 0.4.2 policies/smolvla 可用，避免格式转换）；目标 libero_spatial 非零成功率
-4. E1 奖励头：自产标注管线
-5. Bridge V2 数据源调研
+### 🔬 E0 迭代史（tick 4 收尾：v5 训练中）
+| 版本 | 协议/架构 | pred-cos(A) | A-C 动作敏感 | 结论 |
+|---|---|---|---|---|
+| v1 | 8f ctx, stride 0 | 0.648 | 0.0000 | 动作完全被忽略 |
+| v2 | +残差跳连+ctx dropout, stride 4 | 0.777 | 0.0039 | 预测更好但仍不敏感 |
+| v3 | 单帧 ctx（V-JEPA2-AC 式）| 0.744 | 0.0032 | 单帧仍不够 |
+| **v5（训中）** | **+动作对比损失**（margin 推开随机动作预测）| - | 目标 ≥0.05 | 显式优化检测属性 |
+
+- **能量分析否定了"静态场景主导"假设**：||Δ||/||fut||=0.88 且均匀分布 → 差异主要是编码器上下文敏感性伪影（同内容不同窗口 cos≈0.57），动作相关物理运动是小残差，被 JEPA 主损失淹没
+- **v5 核心思想**：训练目标直接对齐部署属性——`clamp(cos_neg − cos_pos + margin)` 把"随机动作的预测必须更差"写进损失（act_gap 指标随训练实时输出）
+- 若 v5 达标（A-C≥0.05）：全量重训 + ModelScope；若不达标：加重 Hard negative（反动作/缩放动作）或 inverse-dynamics 辅助头
+
+### 🚀 SmolVLA 基线（tick 4，GPU1 运行中）
+- 完整 DTK 配方（已验证到权重加载）：`lerobot-train --dataset.video_backend=pyav --policy.push_to_hub=false --policy.empty_cameras=1 --rename_map={agentview→camera1, wrist→camera2}`
+- 官方 lerobot/smolvla_base 是 PI-aloha 谱系（camera1/2/3）；本地 tempo-pai 谱系底座同样不匹配（勿用）
+- libero_spatial 已转 LeRobot v2.1（500 eps, mp4, state=joint7+grip1, action=OSC_POSE 7）
+- 20k steps bs=32 训练中 → 评测农场测 libero_spatial 成功率（E2 的被验证 policy）
+
+### 🔄 运行中
+- E0-v5（GPU0，logs/train_e0v5_k5_s2000.log，1.58s/step 含负样本前向）
+- SmolVLA libero_spatial 微调（GPU1，logs/train_smolvla_spatial.log）
+- libero_90 下载完成 ✅ LIBERO 全量 130 任务 demos 齐备
+
+### ⏭️ 下一步
+1. E0-v5 验收（act_gap 曲线 + diag）→ 达标则全量版 + ModelScope 上传
+2. SmolVLA 训练监控 → 5k checkpoint 评测农场跑 libero_spatial
+3. 其余 3 套件数据转换（object/goal/libero_90）备全量训练

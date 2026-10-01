@@ -34,6 +34,8 @@ def parse():
     p.add_argument("--fut-frames", type=int, default=8)
     p.add_argument("--stride", type=int, default=0)
     p.add_argument("--out", type=str, default="checkpoints/e0")
+    p.add_argument("--act-weight", type=float, default=1.0, help="动作对比损失权重")
+    p.add_argument("--margin", type=float, default=0.1, help="动作对比 margin")
     return p.parse_args()
 
 
@@ -58,7 +60,7 @@ def main():
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda s: 0.5 * (1 + math.cos(math.pi * min(s / args.steps, 1.0))))
 
     it, t0 = 0, time.time()
-    log_acc = {"loss": [], "cos": []}
+    log_acc = {"loss": [], "cos": [], "act_gap": []}
     while it < args.steps:
         for batch in dl:
             if it >= args.steps:
@@ -70,11 +72,21 @@ def main():
             ctx_tok = ctx_lat.reshape(b, -1, 1024)          # 保持 bf16（DTK 上 SDPA 走显式矩阵，bf16 省一半）
             fut_tok = fut_lat.reshape(b, -1, 1024)
             acts = torch.stack(batch["actions"]).to(args.device).to(ctx_tok.dtype)  # stride=0 时等长 (B,A,7)
+            acts_neg = acts[torch.randperm(b, device=acts.device)]  # 负样本动作（同 batch 错配）
 
             # heads 前向/损失在 bf16 autocast（params fp32 master，优化器状态 fp32）
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 preds = ens(ctx_tok, acts)                  # (K,B,Nf,D)
                 losses = DynamicsEnsemble.jepa_loss(preds, fut_tok)
+                # E0-v5 动作对比项：随机/错配动作的预测应比真动作预测差出 margin
+                preds_neg = ens(ctx_tok, acts_neg)
+                cos_pos = torch.nn.functional.cosine_similarity(
+                    preds.float().mean(0), fut_tok.float(), dim=-1).mean()
+                cos_neg = torch.nn.functional.cosine_similarity(
+                    preds_neg.float().mean(0), fut_tok.float(), dim=-1).mean()
+                act_gap_loss = torch.clamp(cos_neg - cos_pos + args.margin, min=0).mean()
+                losses["loss"] = losses["loss"] + args.act_weight * act_gap_loss
+            log_acc["act_gap"].append((cos_pos - cos_neg).detach().item())
             opt.zero_grad(set_to_none=True)
             losses["loss"].backward()
             torch.nn.utils.clip_grad_norm_(ens.parameters(), 1.0)
@@ -85,7 +97,9 @@ def main():
             if it % 20 == 0:
                 el = time.time() - t0
                 print(f"[e0] step {it:5d} | loss {np.mean(log_acc['loss'][-20:]):.4f} "
-                      f"| cos {np.mean(log_acc['cos'][-20:]):.4f} | lr {sched.get_last_lr()[0]:.2e} "
+                      f"| cos {np.mean(log_acc['cos'][-20:]):.4f} "
+                      f"| act_gap {np.mean(log_acc['act_gap'][-20:]):+.4f} "
+                      f"| lr {sched.get_last_lr()[0]:.2e} "
                       f"| {el/ max(it+1,1):.2f}s/step", flush=True)
             it += 1
 
