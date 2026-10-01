@@ -22,12 +22,22 @@
 - LIBERO env API：OffScreenRenderEnv(bddl_file_name=..., camera_heights=256, camera_widths=256)；无 action_space/_get_obs，用 env.env.action_dim；obs 从 reset/step 返回
 - PyPI 直连慢，用清华镜像 -i https://pypi.tuna.tsinghua.edu.cn/simple；gym 用 0.26.2（0.21 与新 pip 不兼容）
 
+### 🔬 E0 前置发现（2026-10-02，重要协议决策）
+- **V-JEPA 2 latent 特性**（scripts/validate_encoder.py 实测）：
+  1. 确定性 cos=1.0000（冻结无 dropout）
+  2. **强上下文/位置敏感**：同像素内容在不同 clip 偏移下 latent cos 仅 0.546（V-JEPA 2 无绝对位置嵌入、RoPE+双向注意力所致）
+  3. 时间局部性信号弱但存在（相邻步 0.470 vs 远距 0.437，Δ0.033）
+- **协议决策：E0 动态头采用固定窗口相对编码** —— context 窗口与 future 窗口各自独立编码（tubept 均从相对位置 0 起），与 V-JEPA 2-AC / PLaW-VLA 的 future query 协议一致。禁止把"同帧不同偏移应同 latent"当作假设
+- token 排布（源码证实）：conv3d → flatten(2) → (B, T'*16*16, D)，(T',H',W') row-major，reshape (B,T',16,16,D) 正确
+
 ### 🔄 运行中 / 进行中
-- [ ] Bridge V2 / RoboMIND 数据源调研与下载（下一个 tick 启动）
+- LIBERO demos 下载（4 套件，--use-huggingface，logs/dl_libero_all.log）
+- RoboMIND franka_1rgb 下载（68 文件，logs/dl_robomind_franka.log）
+- [ ] validate_encoder.py 第 [4] 项（16 帧双窗口检验）未出结果，下 tick 查
 
 ### ⏭️ 下一步（按序）
-1. Bridge V2 + RoboMIND 数据下载（hf-mirror；RoboMIND 注意失败标注子集）
-2. LIBERO demos 下载（policy 微调用，官方 HF 源）
-3. src/halo/encoder.py：V-JEPA 2 冻结封装（视频→tubept latents，含预处理）
-4. M1 E0 开工：action-conditioned 动态头（bridge 数据先）+ 幻觉注入检测基准设计
-5. 评测农场并行化：384 核 worker 池（multiprocessing，参考 lifelong/metric.py 的 use_mp）
+1. 监控两个数据下载完成后校验完整性（h5 可读、任务数对）
+2. src/halo/data/libero_h5.py：LIBERO demo → (context 窗口, actions, future 窗口) 训练样本管线
+3. src/halo/dynamics.py：action-conditioned 动态头（K=5 ensemble 骨架）+ E0 训练循环 configs/
+4. Bridge V2 数据源调研（rail-berkeley/bridge_orig 在镜像不存在，找 OXE/LeRobot 转换版）
+5. 评测农场并行化：384 核 worker 池
