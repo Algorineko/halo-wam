@@ -59,9 +59,14 @@
 - libero_10+libero_90（=libero_100 全量 demos）下载中
 - RoboMIND bread_in_basket 24/34 文件 + bread_on_table 排队
 
+### 📐 数据格式版图（tick 2 补充）
+- 本机 lerobot 0.4.2（hcu root 继承，v2.x 格式）；RoboMIND BAAI 包 = LeRobot **v3.0**（2975 eps/52万帧，30fps）
+- **决策**：E0 动态头继续用自有 h5 加载器（无 lerobot 依赖）；RoboMIND 数据用时自写轻量 v3.0 读取器（parquet+mp4）；SmolVLA（E2）尝试 venv 内 lerobot 1.x --no-deps 安装，失败则自写微调循环
+- 现成 LIBERO LeRobot 源：zeromidnight/libero_goal_lerobot_v3.0（仅 goal 套件）、physical-intelligence/libero（PI 格式 41k 下载，转换用）——备选
+
 ### ⏭️ 下一步（按序）
-1. E0 训练完成 → 幻觉注入比值验收（>1 才有检测信号）→ 弱则调权重/步数/数据
-2. LIBERO demos 齐后重跑 E0 完整版（130 任务全量）
-3. E1 奖励头骨架（GPU1）：输入 (ctx latents, fut pred latents, task) → success logit；先 LIBERO 自产标注管线
-4. SmolVLA baseline 在 LIBERO 上训练/评测（E2 的被验证 policy，GPU1）
-5. Bridge V2 LeRobot 源调研
+1. **E0 训练完成验收**（~step 2000）：幻觉注入比值（>1 才有检测信号）→ 弱则调权重/步数/数据；产出第一版 checkpoint 推 ModelScope
+2. LIBERO demos 齐（libero_10+90 下载中）后重跑 E0 完整版（130 任务全量）
+3. E1 奖励头骨架（GPU1）：自产标注管线（评测农场+check_success）
+4. SmolVLA baseline（GPU1）：lerobot 1.x 尝试 → LIBERO 微调
+5. Bridge V2 数据源调研
