@@ -46,9 +46,22 @@
 - RoboMIND 主库（x-humanoid-robomind/RoboMIND）受限；公开替代 = BAAI-DataCube 逐任务包（LeRobot v2 格式：parquet+mp4）；franka_1rgb 仅 2 任务公开，franka_3rgb 有 ~15 任务（后续按需下）
 - 数据集字符串 typo 教训：`n_fut_tubelets`（非 tubeplets）
 
+### 🔬 RoboMIND 标注发现（2026-10-02 tick 2）
+- BAAI 公开 LeRobot 包 episodes parquet **无 success/failure 列**（bread_in_basket 2975 eps 只有 index/tasks/length/stats）→ RoboMIND 失败标注仅存于受限主库 h5
+- **E1 奖励头数据策略调整（默认决策，不停等）**：
+  1. 首选：**自产标注** —— 用评测农场跑 policy（早期低成功率 policy 失败样本充足），check_success() 免费生成 success/failure 轨迹；与 LIBERO 域一致，且 CPU 侧无限量产
+  2. 并行：等 bread_on_table/3rgb 包下完复查有无标注；真机合作阶段再补真实失败数据
+  3. bridge_orig 的 9.7k rollout（含失败）仍是 Bridge 侧候选，找 LeRobot 转换源
+- bread_in_basket 单任务 2975 episodes —— 动态头数据广度充足
+
+### 🔄 运行中（tick 2 时点）
+- E0 K=5 训练（step ~200+/2000，loss 1.57↓）
+- libero_10+libero_90（=libero_100 全量 demos）下载中
+- RoboMIND bread_in_basket 24/34 文件 + bread_on_table 排队
+
 ### ⏭️ 下一步（按序）
-1. E0 训练完成 → 看幻觉注入比值（>1 才有幻觉检测信号）→ 若弱：调 loss 权重/训练步数/数据量
-2. RoboMIND bread 包 inspect：episodes parquet 里有没有 success/failure 标注（E1 奖励头关键）
-3. LIBERO demos 齐后重跑 E0 完整版（40 任务全量）
-4. Bridge V2 数据源调研（找 LeRobot/OXE 转换版）
-5. E1 奖励头骨架（GPU1 空闲可用）
+1. E0 训练完成 → 幻觉注入比值验收（>1 才有检测信号）→ 弱则调权重/步数/数据
+2. LIBERO demos 齐后重跑 E0 完整版（130 任务全量）
+3. E1 奖励头骨架（GPU1）：输入 (ctx latents, fut pred latents, task) → success logit；先 LIBERO 自产标注管线
+4. SmolVLA baseline 在 LIBERO 上训练/评测（E2 的被验证 policy，GPU1）
+5. Bridge V2 LeRobot 源调研
