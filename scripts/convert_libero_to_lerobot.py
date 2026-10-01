@@ -31,7 +31,8 @@ def main():
         "action": {"dtype": "float32", "shape": (7,), "names": None},
     }
     repo_id = f"halo-wam/{args.suite}"
-    root = f"{HALO_DATA}/datasets/lerobot"
+    # 每套件独立 root，避免 flat meta 冲突（spatial 首次转换在 datasets/lerobot/，保持不动）
+    root = f"{HALO_DATA}/datasets/lerobot/{args.suite}"
     ds = LeRobotDataset.create(repo_id=repo_id, fps=20, features=features, root=root, use_videos=True)
     print(f"[convert] created dataset {repo_id} at {root}")
 
