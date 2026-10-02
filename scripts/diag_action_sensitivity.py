@@ -40,12 +40,13 @@ def main():
     if len(sys.argv) > 2:  # 第二参数：只评测留出任务
         with open(sys.argv[2]) as f:
             pats = [l.strip() for l in f if l.strip() and not l.startswith("#")]
-        ds.files = [fp for fp in ds.files if any(p in os.path.basename(fp) for p in pats)]
+        # 注意顺序：只过滤 index/samples，不动 ds.files（索引失效风险）
         ds.index = [(fi, d, t) for fi, d, t in ds.index
                     if any(p in os.path.basename(ds.files[fi]) for p in pats)]
         ds.samples = [s for s in ds.samples if any(
             p in os.path.basename(ds.files[s[0]]) for p in pats)]
-        print(f"[diag] 留出任务模式: {len(ds.files)} files, {len(ds)} samples")
+        n_files = len({s[0] for s in ds.samples})
+        print(f"[diag] 留出任务模式: {n_files} files, {len(ds)} samples")
     dl = DataLoader(ds, batch_size=16, shuffle=False, num_workers=4, collate_fn=collate)
 
     stats = {k: {"cos": [], "std": []} for k in ["A_true", "B_mismatch", "C_random", "D_zero", "E_double", "F_noact"]}
