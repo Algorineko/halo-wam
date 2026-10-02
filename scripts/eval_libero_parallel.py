@@ -30,6 +30,7 @@ def run_one_task(args):
 
     import numpy as np
     import torch
+    torch.set_num_threads(4)  # 容器 32GB：不限线程时每进程 OpenMP 栈会撑爆内存
     from libero.libero import benchmark
     from libero.libero.envs import OffScreenRenderEnv
 
@@ -50,7 +51,7 @@ def run_one_task(args):
         ck = torch.load(ckpt, map_location="cpu", weights_only=False)
         vocab = ck["vocab"]
         inv_vocab = {v: k for k, v in vocab.items()}
-        pol = HaloACT(dim=256, chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).to("cuda:0").eval()
+        pol = HaloACT(dim=256, chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).to("cpu").eval()
         pol.load_state_dict(ck["model"])
     if policy == "haloact_v":
         import sys
@@ -87,15 +88,15 @@ def run_one_task(args):
             elif policy == "haloact_v":
                 if not act_queue:
                     state = np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
-                    tid = torch.tensor([vocab[task.name]]).cuda()
+                    tid = torch.tensor([vocab[task.name]])
                     with torch.inference_mode():
                         cands = []
                         for _ in range(n_cand):
-                            noise = torch.randn(32) * 0.02  # 轻微扰动打破确定性流
-                            a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
-                            a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
-                            st = torch.from_numpy(state).float().unsqueeze(0).cuda()
-                            chunk = pol(a1, a2, st, tid)[0] + noise[: pol.chunk * 7].reshape(pol.chunk, 7)
+                            noise = torch.randn(pol.chunk * 7) * 0.02  # 轻微扰动打破确定性流
+                            a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                            a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                            st = torch.from_numpy(state).float().unsqueeze(0)
+                            chunk = pol(a1, a2, st, tid)[0] + noise.reshape(pol.chunk, 7)
                             cands.append(chunk.clamp(-1, 1))  # (13,7)
                         cand_acts = torch.stack(cands)
                         scores = verifier_scorer.score(
@@ -109,10 +110,10 @@ def run_one_task(args):
                 continue
             elif policy == "haloact":
                 state = np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
-                a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
-                a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
-                st = torch.from_numpy(state).float().unsqueeze(0).cuda()
-                tid = torch.tensor([vocab[task.name]]).cuda()
+                a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                st = torch.from_numpy(state).float().unsqueeze(0)
+                tid = torch.tensor([vocab[task.name]])
                 with torch.inference_mode():
                     if not act_queue:
                         chunk = pol(a1, a2, st, tid)[0].clamp(-1, 1)  # (13,7)
@@ -196,9 +197,31 @@ def main():
     print(f"[eval] {args.suite}: {n_tasks} tasks × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
 
     t0 = time.time()
-    ctx = mp.get_context("spawn")
-    with ctx.Pool(processes=args.workers, maxtasksperchild=1) as pool:
-        results = pool.map(run_one_task, jobs)
+    # 子进程直评模式：multiprocessing spawn-pool 在本容器会随机挂起，改为每任务独立子进程
+    import subprocess
+    import sys as _sys
+    results, procs = [], []
+    job_queue = list(jobs)
+    active = {}
+    while job_queue or active:
+        while job_queue and len(active) < args.workers:
+            j = job_queue.pop(0)
+            code = (
+                "import json,sys;sys.path.insert(0,'/home/tione/notebook/home/arianliu/project/halo-wam/scripts');"
+                "from eval_libero_parallel import run_one_task;"
+                f"print(json.dumps(run_one_task({j!r})))"
+            )
+            pr = subprocess.Popen([_sys.executable, "-c", code], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            active[pr.pid] = (pr, j)
+        done_pids = [pid for pid, (pr, _) in active.items() if pr.poll() is not None]
+        for pid in done_pids:
+            pr, j = active.pop(pid)
+            out = pr.stdout.read().strip() if pr.stdout else ""
+            try:
+                results.append(json.loads(out.splitlines()[-1]))
+            except Exception:
+                results.append({"task": f"task{j[0]}", "episodes": j[2], "success": 0, "rate": 0.0, "avg_steps": -1, "wall_s": -1, "error": True})
+        time.sleep(2)
     wall = time.time() - t0
 
     os.makedirs(_RESULT_DIR, exist_ok=True)
