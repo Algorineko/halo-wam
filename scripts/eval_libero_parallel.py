@@ -42,7 +42,7 @@ def run_one_task(args):
 
     pol = None
     verifier_scorer = None
-    if policy in ("haloact", "haloact_v"):
+    if policy in ("haloact", "haloact_v", "haloact_h"):
         import sys
 
         sys.path.insert(0, "/home/tione/notebook/home/arianliu/project/halo-wam/src")
@@ -92,7 +92,7 @@ def run_one_task(args):
         while not done and step < 500:  # LIBERO 上限 500 步（robosuite horizon）
             if policy == "random":
                 action = rng.uniform(-1, 1, env.env.action_dim)
-            elif policy == "haloact_v":
+            elif policy in ("haloact_v", "haloact_h"):
                 if not act_queue:
                     state = np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
                     tid = torch.tensor([vocab[task.name]])
