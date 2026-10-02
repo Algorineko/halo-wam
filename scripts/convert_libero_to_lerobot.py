@@ -25,15 +25,16 @@ def main():
     from lerobot.datasets.lerobot_dataset import LeRobotDataset
 
     features = {
-        "observation.images.agentview": {"dtype": "video", "shape": (128, 128, 3), "names": None},
-        "observation.images.wrist": {"dtype": "video", "shape": (128, 128, 3), "names": None},
+        # image 格式（parquet 内嵌）：绕开 lerobot 视频 seek/解码管线——该管线在本机反复死锁
+        "observation.images.agentview": {"dtype": "image", "shape": (128, 128, 3), "names": ["height", "width", "channels"]},
+        "observation.images.wrist": {"dtype": "image", "shape": (128, 128, 3), "names": ["height", "width", "channels"]},
         "observation.state": {"dtype": "float32", "shape": (8,), "names": None},
         "action": {"dtype": "float32", "shape": (7,), "names": None},
     }
     repo_id = f"halo-wam/{args.suite}"
     # 每套件独立 root，避免 flat meta 冲突（spatial 首次转换在 datasets/lerobot/，保持不动）
     root = f"{HALO_DATA}/datasets/lerobot/{args.suite}"
-    ds = LeRobotDataset.create(repo_id=repo_id, fps=20, features=features, root=root, use_videos=True)
+    ds = LeRobotDataset.create(repo_id=repo_id, fps=20, features=features, root=root, use_videos=False)
     print(f"[convert] created dataset {repo_id} at {root}")
 
     files = sorted(glob.glob(f"{HALO_DATA}/datasets/libero/{args.suite}/*.hdf5"))
