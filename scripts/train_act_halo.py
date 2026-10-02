@@ -30,6 +30,8 @@ def main():
     ap.add_argument("--bs", type=int, default=64)
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--chunk", type=int, default=13, help="= ctx-1+stride+fut（与数据窗一致）")
+    ap.add_argument("--dim", type=int, default=256)
+    ap.add_argument("--depth", type=int, default=4)
     ap.add_argument("--exclude-file", type=str, default="")
     ap.add_argument("--out", type=str, default="checkpoints/act")
     args = ap.parse_args()
@@ -50,7 +52,7 @@ def main():
                         collate_fn=__import__("halo.data.libero_h5", fromlist=["collate"]).collate)
 
     dev = "cuda:0"
-    model = HaloACT(dim=256, chunk=args.chunk, n_tasks=len(vocab), act_dim=7).to(dev)
+    model = HaloACT(dim=args.dim, chunk=args.chunk, n_tasks=len(vocab), act_dim=7).to(dev)
     print(f"[act] params: {sum(p.numel() for p in model.parameters())/1e6:.1f}M")
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.05)
 
