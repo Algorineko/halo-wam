@@ -14,7 +14,7 @@ import time
 
 
 def rollout_one_task(args):
-    task_idx, suite_name, n_episodes, ckpt, out_dir = args
+    task_idx, suite_name, n_episodes, ckpt, out_dir, pol_kind = args
     os.environ.setdefault("MUJOCO_GL", "osmesa")
     os.environ.setdefault("PYOPENGL_PLATFORM", "osmesa")
     os.environ.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
@@ -25,15 +25,25 @@ def rollout_one_task(args):
     import torch
     from libero.libero import benchmark
     from libero.libero.envs import OffScreenRenderEnv
-    from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
+    import sys as _sys
+    _sys.path.insert(0, "/home/tione/notebook/home/arianliu/project/halo-wam/src")
+    if pol_kind == "haloact":
+        from halo.act_policy import HaloACT
+        _ck = torch.load(ckpt, map_location="cpu", weights_only=False)
+        pol = HaloACT(dim=256, chunk=_ck["args"]["chunk"], n_tasks=len(_ck["vocab"]), act_dim=7).cuda().eval()
+        pol.load_state_dict(_ck["model"])
+        _vocab = _ck["vocab"]
+    else:
+        from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
+        pol = SmolVLAPolicy.from_pretrained(ckpt)
+        pol.eval()
+        _vocab = None
 
     suite = benchmark.get_benchmark_dict()[suite_name]()
     task = suite.get_task(task_idx)
     task_str = task.name.replace("_", " ")
     init_states = suite.get_task_init_states(task_idx)
 
-    pol = SmolVLAPolicy.from_pretrained(ckpt)
-    pol.eval()
     env = OffScreenRenderEnv(bddl_file_name=suite.get_task_bddl_file_path(task_idx),
                              camera_heights=128, camera_widths=128)
     n_episodes = min(n_episodes, len(init_states))
@@ -44,22 +54,37 @@ def rollout_one_task(args):
         obs = env.reset()
         env.set_init_state(init_states[ep])
         obs, _, _, _ = env.step(np.zeros(env.env.action_dim))
-        pol.reset()
+        _q = []
+        if pol_kind == "haloact":
+            pass
+        else:
+            pol.reset()
         frames_a, frames_w, joints, grips, acts = [], [], [], [], []
         done, step = False, 0
         while not done and step < 500:
-            batch = {
-                "observation.images.camera1": torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
-                "observation.images.camera2": torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
-                "observation.images.camera3": torch.zeros(1, 3, 128, 128),
-                "observation.state": torch.from_numpy(
-                    np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
-                ).float().unsqueeze(0),
-                "task": [task_str],
-            }
-            with torch.inference_mode():
-                a = pol.select_action(batch)
-            action = a.squeeze(0).numpy()[: env.env.action_dim]
+            if pol_kind == "haloact":
+                a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
+                a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
+                st = torch.from_numpy(np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])).float().unsqueeze(0).cuda()
+                tid = torch.tensor([_vocab[task.name]]).cuda()
+                with torch.inference_mode():
+                    if not _q:
+                        _c = pol(a1, a2, st, tid)[0].clamp(-1, 1)
+                        _q = _c.tolist()
+                action = np.array(_q.pop(0))[: env.env.action_dim]
+            else:
+                batch = {
+                    "observation.images.camera1": torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
+                    "observation.images.camera2": torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
+                    "observation.images.camera3": torch.zeros(1, 3, 128, 128),
+                    "observation.state": torch.from_numpy(
+                        np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
+                    ).float().unsqueeze(0),
+                    "task": [task_str],
+                }
+                with torch.inference_mode():
+                    a = pol.select_action(batch)
+                action = a.squeeze(0).numpy()[: env.env.action_dim]
             frames_a.append(obs["agentview_image"]); frames_w.append(obs["robot0_eye_in_hand_image"])
             joints.append(obs["robot0_joint_pos"]); grips.append(obs["robot0_gripper_qpos"])
             acts.append(action)
@@ -88,13 +113,14 @@ def main():
     p.add_argument("--suite", type=str, default="libero_spatial")
     p.add_argument("--episodes", type=int, default=5)
     p.add_argument("--workers", type=int, default=10)
+    p.add_argument("--policy", type=str, default="haloact", choices=["haloact", "smolvla"])
     p.add_argument("--out", type=str, required=True)
     args = p.parse_args()
 
     from libero.libero import benchmark
 
     suite = benchmark.get_benchmark_dict()[args.suite]()
-    jobs = [(i, args.suite, args.episodes, args.ckpt, args.out) for i in range(suite.get_num_tasks())]
+    jobs = [(i, args.suite, args.episodes, args.ckpt, args.out, args.policy) for i in range(suite.get_num_tasks())]
     print(f"[collect] {len(jobs)} tasks × {args.episodes} eps, workers={args.workers}")
     t0 = time.time()
     ctx = mp.get_context("spawn")

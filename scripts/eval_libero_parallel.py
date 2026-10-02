@@ -22,7 +22,7 @@ _RESULT_DIR = "/home/tione/notebook/home/arianliu/project/halo-wam/eval_results"
 
 def run_one_task(args):
     """子进程：跑一个任务的 n 个 episode，返回成功率。"""
-    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand, dump_dir = args
+    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand, dump_dir, reward_ckpt, lambda_u = args
     os.environ.setdefault("MUJOCO_GL", "osmesa")
     os.environ.setdefault("PYOPENGL_PLATFORM", "osmesa")
     os.environ.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
@@ -53,7 +53,7 @@ def run_one_task(args):
         inv_vocab = {v: k for k, v in vocab.items()}
         pol = HaloACT(dim=256, chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).to("cpu").eval()
         pol.load_state_dict(ck["model"])
-    if policy == "haloact_v":
+    if policy in ("haloact_v", "haloact_h"):
         import sys
 
         sys.path.insert(0, "/home/tione/notebook/home/arianliu/project/halo-wam/src")
@@ -66,6 +66,13 @@ def run_one_task(args):
         ck = torch.load(verifier, map_location="cuda:0")
         ens.load_state_dict(ck["model"])
         verifier_scorer = UncertaintyScorer(enc, ens, device="cuda:0")
+        reward_head = None
+        if policy == "haloact_h" and reward_ckpt:
+            from halo.reward import RewardHead
+            rk = torch.load(reward_ckpt, map_location="cpu", weights_only=False)
+            reward_head = RewardHead(dim=1024, n_tasks=len(rk["vocab"])).cuda().eval()
+            reward_head.load_state_dict(rk["model"])
+            _rvocab = rk["vocab"]
 
     env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=128, camera_widths=128)
     n_episodes = min(n_episodes, len(init_states))
@@ -99,9 +106,22 @@ def run_one_task(args):
                             chunk = pol(a1, a2, st, tid)[0] + noise.reshape(pol.chunk, 7)
                             cands.append(chunk.clamp(-1, 1))  # (13,7)
                         cand_acts = torch.stack(cands)
-                        scores = verifier_scorer.score(
+                        stds = verifier_scorer.score(
                             torch.from_numpy(obs["agentview_image"]), cand_acts.float()
                         )
+                        if reward_head is not None:
+                            from halo.encoder import HaloEncoder as _HE
+                            ctx_lat = verifier_scorer.enc.encode(torch.from_numpy(obs["agentview_image"]).unsqueeze(0))
+                            ctx_tok = ctx_lat.reshape(1, -1, 1024).expand(cand_acts.shape[0], -1, -1)
+                            with torch.autocast("cuda", dtype=torch.bfloat16):
+                                preds = verifier_scorer.ens(ctx_tok, cand_acts.cuda().to(ctx_tok.dtype))
+                            fut_tok = preds.float().mean(0)
+                            rtid = torch.tensor([_rvocab[task.name]] * cand_acts.shape[0]).cuda()
+                            with torch.inference_mode():
+                                rewards = reward_head(ctx_tok.float(), fut_tok, rtid)
+                            scores = rewards - float(lambda_u) * stds  # 完整 HALO 打分
+                        else:
+                            scores = stds
                         best = int(scores.argmin())
                     act_queue = cands[best].tolist()
                 action = np.array(act_queue.pop(0))[: env.env.action_dim]
@@ -180,10 +200,12 @@ def main():
     p.add_argument("--suite", type=str, default="libero_spatial")
     p.add_argument("--episodes", type=int, default=5)
     p.add_argument("--workers", type=int, default=32)
-    p.add_argument("--policy", type=str, default="random", choices=["random", "haloact", "haloact_v"])
+    p.add_argument("--policy", type=str, default="random", choices=["random", "haloact", "haloact_v", "haloact_h"])
     p.add_argument("--ckpt", type=str, default="", help="smolvla checkpoint 目录")
     p.add_argument("--verifier", type=str, default="", help="E0 动态头 checkpoint（smolvla_v 用）")
     p.add_argument("--n-cand", type=int, default=5, help="best-of-N 候选数")
+    p.add_argument("--reward-ckpt", type=str, default="", help="E1 奖励头（haloact_h 用）")
+    p.add_argument("--lambda-u", type=float, default=1.0, help="不确定性惩罚权重")
     p.add_argument("--n-tasks", type=int, default=0, help="0=全部任务")
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args()
@@ -193,7 +215,7 @@ def main():
     suite = benchmark.get_benchmark_dict()[args.suite]()
     n_tasks = suite.get_num_tasks()
     n_run = args.n_tasks or n_tasks
-    jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier, args.n_cand, "") for i in range(n_run)]
+    jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier, args.n_cand, "", args.reward_ckpt, args.lambda_u) for i in range(n_run)]
     print(f"[eval] {args.suite}: {n_tasks} tasks × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
 
     t0 = time.time()
