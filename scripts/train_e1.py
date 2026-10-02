@@ -27,7 +27,7 @@ HALO_ROOT = "/home/tione/notebook/home/arianliu/project/halo-wam"
 HALO_DATA = "/home/tione/notebook/home/arianliu/data/halo-wam"
 
 
-def build_samples(max_per_side=1500):
+def build_samples(max_per_side=2500):
     """返回 [(ctx(T,H,W,3) uint8, actions(A,7), task_name, label)]"""
     import h5py
 
@@ -37,13 +37,13 @@ def build_samples(max_per_side=1500):
     for fp in demo_files:
         task = os.path.basename(fp).replace("_demo.hdf5", "")
         with h5py.File(fp, "r") as f:
-            demos = sorted(f["data"].keys())[:1]
+            demos = sorted(f["data"].keys())[:2]  # v2: 2 demos/task
             for d in demos:
                 g = f[f"data/{d}"]
                 T = g["actions"].shape[0]
-                if T < 16:
+                if T < 24:
                     continue
-                for s in (0, T // 2):
+                for s in (0, T // 3, 2 * T // 3):  # v2: 3 windows/demo
                     ctx = g["obs/agentview_rgb"][s : s + 2]
                     acts = g["actions"][s + 1 : s + 13]
                     if len(acts) < 12:
