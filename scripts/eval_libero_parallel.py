@@ -41,12 +41,18 @@ def run_one_task(args):
 
     pol = None
     verifier_scorer = None
-    if policy in ("smolvla", "smolvla_v"):
-        from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
+    if policy in ("haloact", "haloact_v"):
+        import sys
 
-        pol = SmolVLAPolicy.from_pretrained(ckpt)
-        pol.eval()
-    if policy == "smolvla_v":
+        sys.path.insert(0, "/home/tione/notebook/home/arianliu/project/halo-wam/src")
+        from halo.act_policy import HaloACT
+
+        ck = torch.load(ckpt, map_location="cpu", weights_only=False)
+        vocab = ck["vocab"]
+        inv_vocab = {v: k for k, v in vocab.items()}
+        pol = HaloACT(dim=256, chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).to("cuda:0").eval()
+        pol.load_state_dict(ck["model"])
+    if policy == "haloact_v":
         import sys
 
         sys.path.insert(0, "/home/tione/notebook/home/arianliu/project/halo-wam/src")
@@ -75,10 +81,44 @@ def run_one_task(args):
         obs, _, _, _ = env.step(np.zeros(env.env.action_dim))  # 触发一次 obs 生成（0 动作）
         pol.reset() if pol is not None else None
         done, step = False, 0
-        act_queue = []  # smolvla_v 手动动作队列
+        act_queue = []  # *_v 手动动作队列
         while not done and step < 500:  # LIBERO 上限 500 步（robosuite horizon）
             if policy == "random":
                 action = rng.uniform(-1, 1, env.env.action_dim)
+            elif policy == "haloact_v":
+                if not act_queue:
+                    state = np.concatenate([obs["joint_states"], obs["gripper_states"][:1]])
+                    tid = torch.tensor([vocab[task.name]])
+                    with torch.inference_mode():
+                        cands = []
+                        for _ in range(n_cand):
+                            noise = torch.randn(32) * 0.02  # 轻微扰动打破确定性流
+                            a1 = torch.from_numpy(obs["agentview_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                            a2 = torch.from_numpy(obs["eye_in_hand_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                            st = torch.from_numpy(state).float().unsqueeze(0)
+                            chunk = pol(a1, a2, st, tid)[0] + noise[: pol.chunk * 7].reshape(pol.chunk, 7)
+                            cands.append(chunk.clamp(-1, 1))  # (13,7)
+                        cand_acts = torch.stack(cands)
+                        scores = verifier_scorer.score(
+                            torch.from_numpy(obs["agentview_rgb"]), cand_acts.float()
+                        )
+                        best = int(scores.argmin())
+                    act_queue = cands[best].tolist()
+                action = np.array(act_queue.pop(0))[: env.env.action_dim]
+                obs, _, done, _ = env.step(action)
+                step += 1
+                continue
+            elif policy == "haloact":
+                state = np.concatenate([obs["joint_states"], obs["gripper_states"][:1]])
+                a1 = torch.from_numpy(obs["agentview_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                a2 = torch.from_numpy(obs["eye_in_hand_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                st = torch.from_numpy(state).float().unsqueeze(0)
+                tid = torch.tensor([vocab[task.name]])
+                with torch.inference_mode():
+                    if not act_queue:
+                        chunk = pol(a1, a2, st, tid)[0].clamp(-1, 1)  # (13,7)
+                        act_queue = chunk.tolist()
+                action = np.array(act_queue.pop(0))[: env.env.action_dim]
             elif policy == "smolvla_v":
                 if not act_queue:
                     batch = {
@@ -140,7 +180,7 @@ def main():
     p.add_argument("--suite", type=str, default="libero_spatial")
     p.add_argument("--episodes", type=int, default=5)
     p.add_argument("--workers", type=int, default=32)
-    p.add_argument("--policy", type=str, default="random", choices=["random", "smolvla", "smolvla_v"])
+    p.add_argument("--policy", type=str, default="random", choices=["random", "haloact", "haloact_v"])
     p.add_argument("--ckpt", type=str, default="", help="smolvla checkpoint 目录")
     p.add_argument("--verifier", type=str, default="", help="E0 动态头 checkpoint（smolvla_v 用）")
     p.add_argument("--n-cand", type=int, default=5, help="best-of-N 候选数")
