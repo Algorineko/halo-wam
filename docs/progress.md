@@ -88,6 +88,15 @@
 
 checkpoint 已传 ModelScope（e0_prod/dyn_ens_k5_s4000.pt）。生产版世界模型就绪，E2 verifier 直接引用。
 
+### 🚨 运维事故复盘（2026-10-02 08:00-09:00）：容器 32GB OOM 连环互杀
+- **根因**：容器 cgroup memory.max=32GB（`free` 显示宿主机 2.2T 是巨大误导）；SmolVLA 训练启动的内存尖峰触发容器 OOM，killer 选最大 RSS 进程 → 连续误杀当时在训的 e0_heldout（`oom_kill=3`，`max_usage 34.4GB`）
+- **假象复盘**：三次"死锁"（16/32/8 workers）实为 worker 被杀后 main 卡 queue.get；关键帧重编码（-g 15）后实测 seek 解码仅 0.12s → 视频 seek 非瓶颈
+- **修复**：
+  1. 数据集转 **image 格式**（parquet 内嵌帧，绕开视频解码缓冲；spatial 已重转 2.2GB）
+  2. **双训练串行化铁律**（看门狗 cron 6e58fd2d 强制）：任意时刻单训练；SmolVLA 排队时降配 num_workers=3 / bs=16
+  3. 看门狗每 20 分钟判活（日志 mtime 阈值 10 分钟），死亡自动按队列重启并记 logs/watchdog.log
+- **教训**：排查容器问题第一件事看 `/sys/fs/cgroup/memory/`（当前 11.0/32 GB，e0_heldout 独跑健康）
+
 ### 🔄 运行中（tick 3）
 - E0-v2 训练（GPU0，logs/train_e0v2_k5_s2000.log，1.06s/step，~35min）
 - libero_90 下载（6/100 慢速）；RoboMIND 双包已齐（13G+11G）
