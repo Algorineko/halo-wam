@@ -88,6 +88,13 @@
 
 checkpoint 已传 ModelScope（e0_prod/dyn_ens_k5_s4000.pt）。生产版世界模型就绪，E2 verifier 直接引用。
 
+### 🏆 留出任务泛化确认（2026-10-02 10:20）——记忆效应排除
+- **e0_heldout**（122 任务训练，8 任务留出）在**从未见过的 8 任务**上：
+  A-C=+0.172（对照 e0_prod 见过任务 0.167——**持平**）、注入 ratio 2.68（vs 2.53）
+  A 真动作 cos 0.790/std 0.336 vs C 随机 cos 0.618/std 0.724——双通道干净分离
+- 结论：动作敏感性与幻觉检测信号是**泛化能力**，非任务记忆——论文核心主张的关键论据
+- 消融汇总更新：margin 0.1 优于 0.05（0.173 vs 0.088）；泛化无损（0.172 unseen vs 0.167 seen）
+
 ### 🚨 运维事故复盘（2026-10-02 08:00-09:00）：容器 32GB OOM 连环互杀
 - **根因**：容器 cgroup memory.max=32GB（`free` 显示宿主机 2.2T 是巨大误导）；SmolVLA 训练启动的内存尖峰触发容器 OOM，killer 选最大 RSS 进程 → 连续误杀当时在训的 e0_heldout（`oom_kill=3`，`max_usage 34.4GB`）
 - **假象复盘**：三次"死锁"（16/32/8 workers）实为 worker 被杀后 main 卡 queue.get；关键帧重编码（-g 15）后实测 seek 解码仅 0.12s → 视频 seek 非瓶颈
