@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "suite": "libero_spatial",
+    "episodes": 5,
+    "workers": 3,
+    "policy": "haloact",
+    "ckpt": "/home/tione/notebook/home/arianliu/project/halo-wam/checkpoints/act_v2/best.pt",
+    "verifier": "",
+    "n_cand": 5,
+    "reward_ckpt": "",
+    "lambda_u": 1.0,
+    "n_tasks": 0,
+    "seed": 0,
+    "wall_s": 24.0,
+    "ts": "2026-10-03T07:23:59.280597"
+  },
+  "results": [
+    {
+      "task": "task0",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    },
+    {
+      "task": "task1",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    },
+    {
+      "task": "task2",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    },
+    {
+      "task": "task3",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    },
+    {
+      "task": "task4",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    },
+    {
+      "task": "task5",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    },
+    {
+      "task": "task6",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    },
+    {
+      "task": "task7",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    },
+    {
+      "task": "task8",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    },
+    {
+      "task": "task9",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ismatch for decoder.layers.3.norm3.bias: copying a param with shape torch.Size([384]) from checkpoint, the shape in current model is torch.Size([256]).\n\tsize mismatch for head.weight: copying a param with shape torch.Size([7, 384]) from checkpoint, the shape in current model is torch.Size([7, 256])."
+    }
+  ],
+  "mean_rate": 0.0
+}

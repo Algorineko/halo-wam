@@ -51,7 +51,7 @@ def run_one_task(args):
         ck = torch.load(ckpt, map_location="cpu", weights_only=False)
         vocab = ck["vocab"]
         inv_vocab = {v: k for k, v in vocab.items()}
-        pol = HaloACT(dim=256, chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).to("cpu").eval()
+        pol = HaloACT(dim=ck["args"].get("dim", 256), chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).to("cpu").eval()
         pol.load_state_dict(ck["model"])
     if policy in ("haloact_v", "haloact_h"):
         import sys
@@ -233,16 +233,17 @@ def main():
                 "from eval_libero_parallel import run_one_task;"
                 f"print(json.dumps(run_one_task({j!r})))"
             )
-            pr = subprocess.Popen([_sys.executable, "-c", code], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            pr = subprocess.Popen([_sys.executable, "-c", code], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             active[pr.pid] = (pr, j)
         done_pids = [pid for pid, (pr, _) in active.items() if pr.poll() is not None]
         for pid in done_pids:
             pr, j = active.pop(pid)
             out = pr.stdout.read().strip() if pr.stdout else ""
+            err = pr.stderr.read().strip() if pr.stderr else ""
             try:
                 results.append(json.loads(out.splitlines()[-1]))
             except Exception:
-                results.append({"task": f"task{j[0]}", "episodes": j[2], "success": 0, "rate": 0.0, "avg_steps": -1, "wall_s": -1, "error": True})
+                results.append({"task": f"task{j[0]}", "episodes": j[2], "success": 0, "rate": 0.0, "avg_steps": -1, "wall_s": -1, "error": True, "stderr": err[-300:]})
         time.sleep(2)
     wall = time.time() - t0
 

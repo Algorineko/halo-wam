@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "suite": "libero_spatial",
+    "episodes": 5,
+    "workers": 3,
+    "policy": "haloact",
+    "ckpt": "/home/tione/notebook/home/arianliu/project/halo-wam/checkpoints/act_v2/best.pt",
+    "verifier": "",
+    "n_cand": 5,
+    "reward_ckpt": "",
+    "lambda_u": 1.0,
+    "n_tasks": 0,
+    "seed": 0,
+    "wall_s": 24.0,
+    "ts": "2026-10-03T07:14:47.703388"
+  },
+  "results": [
+    {
+      "task": "task0",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    },
+    {
+      "task": "task1",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    },
+    {
+      "task": "task2",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    },
+    {
+      "task": "task3",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    },
+    {
+      "task": "task4",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    },
+    {
+      "task": "task5",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    },
+    {
+      "task": "task6",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    },
+    {
+      "task": "task7",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    },
+    {
+      "task": "task8",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    },
+    {
+      "task": "task9",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true
+    }
+  ],
+  "mean_rate": 0.0
+}
