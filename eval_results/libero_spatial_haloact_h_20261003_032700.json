@@ -1,0 +1,100 @@
+{
+  "meta": {
+    "suite": "libero_spatial",
+    "episodes": 5,
+    "workers": 2,
+    "policy": "haloact_h",
+    "ckpt": "checkpoints/act60k/best.pt",
+    "verifier": "checkpoints/e0v5/dyn_ens_k5_s2000.pt",
+    "n_cand": 5,
+    "reward_ckpt": "checkpoints/e1/reward_head.pt",
+    "lambda_u": 1.0,
+    "n_tasks": 0,
+    "seed": 0,
+    "wall_s": 2646.7,
+    "ts": "2026-10-03T03:27:00.347817"
+  },
+  "results": [
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 4,
+      "rate": 0.8,
+      "avg_steps": 186.0,
+      "wall_s": 226.6
+    },
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 556.3
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 1,
+      "rate": 0.2,
+      "avg_steps": 417.2,
+      "wall_s": 460.6
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 1,
+      "rate": 0.2,
+      "avg_steps": 417.6,
+      "wall_s": 449.4
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 537.9
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 548.4
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 522.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 525.1
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 542.5
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate",
+      "episodes": 5,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 497.1
+    }
+  ],
+  "mean_rate": 0.12
+}
