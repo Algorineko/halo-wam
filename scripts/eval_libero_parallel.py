@@ -79,28 +79,27 @@ def run_one_task(args):
         obs = env.reset()
         env.set_init_state(init_states[ep])
         obs, _, _, _ = env.step(np.zeros(env.env.action_dim))  # 触发一次 obs 生成（0 动作）
-        pol.reset() if pol is not None else None
+        act_queue = []  # 新 episode 清空动作队列
         done, step = False, 0
-        act_queue = []  # *_v 手动动作队列
         while not done and step < 500:  # LIBERO 上限 500 步（robosuite horizon）
             if policy == "random":
                 action = rng.uniform(-1, 1, env.env.action_dim)
             elif policy == "haloact_v":
                 if not act_queue:
-                    state = np.concatenate([obs["joint_states"], obs["gripper_states"][:1]])
-                    tid = torch.tensor([vocab[task.name]])
+                    state = np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
+                    tid = torch.tensor([vocab[task.name]]).cuda()
                     with torch.inference_mode():
                         cands = []
                         for _ in range(n_cand):
                             noise = torch.randn(32) * 0.02  # 轻微扰动打破确定性流
-                            a1 = torch.from_numpy(obs["agentview_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
-                            a2 = torch.from_numpy(obs["eye_in_hand_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
-                            st = torch.from_numpy(state).float().unsqueeze(0)
+                            a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
+                            a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
+                            st = torch.from_numpy(state).float().unsqueeze(0).cuda()
                             chunk = pol(a1, a2, st, tid)[0] + noise[: pol.chunk * 7].reshape(pol.chunk, 7)
                             cands.append(chunk.clamp(-1, 1))  # (13,7)
                         cand_acts = torch.stack(cands)
                         scores = verifier_scorer.score(
-                            torch.from_numpy(obs["agentview_rgb"]), cand_acts.float()
+                            torch.from_numpy(obs["agentview_image"]), cand_acts.float()
                         )
                         best = int(scores.argmin())
                     act_queue = cands[best].tolist()
@@ -109,11 +108,11 @@ def run_one_task(args):
                 step += 1
                 continue
             elif policy == "haloact":
-                state = np.concatenate([obs["joint_states"], obs["gripper_states"][:1]])
-                a1 = torch.from_numpy(obs["agentview_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
-                a2 = torch.from_numpy(obs["eye_in_hand_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
-                st = torch.from_numpy(state).float().unsqueeze(0)
-                tid = torch.tensor([vocab[task.name]])
+                state = np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
+                a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
+                a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
+                st = torch.from_numpy(state).float().unsqueeze(0).cuda()
+                tid = torch.tensor([vocab[task.name]]).cuda()
                 with torch.inference_mode():
                     if not act_queue:
                         chunk = pol(a1, a2, st, tid)[0].clamp(-1, 1)  # (13,7)
@@ -122,11 +121,11 @@ def run_one_task(args):
             elif policy == "smolvla_v":
                 if not act_queue:
                     batch = {
-                        "observation.images.camera1": torch.from_numpy(obs["agentview_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
-                        "observation.images.camera2": torch.from_numpy(obs["eye_in_hand_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
+                        "observation.images.camera1": torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
+                        "observation.images.camera2": torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
                         "observation.images.camera3": torch.zeros(1, 3, 128, 128),
                         "observation.state": torch.from_numpy(
-                            np.concatenate([obs["joint_states"], obs["gripper_states"][:1]])
+                            np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
                         ).float().unsqueeze(0),
                         "task": [task_str],
                     }
@@ -134,7 +133,7 @@ def run_one_task(args):
                         cands = [pol.predict_action_chunk(batch).squeeze(0) for _ in range(n_cand)]  # (n_steps,A)
                         cand_acts = torch.stack([c[:13, :7] for c in cands])  # 对齐训练动作窗长（ctx2+stride4+fut8=13）
                         scores = verifier_scorer.score(
-                            torch.from_numpy(obs["agentview_rgb"]), cand_acts.float()
+                            torch.from_numpy(obs["agentview_image"]), cand_acts.float()
                         )
                         best = int(scores.argmin())
                     act_queue = cands[best].tolist()
@@ -146,11 +145,11 @@ def run_one_task(args):
                 continue
             elif policy == "smolvla":
                 batch = {
-                    "observation.images.camera1": torch.from_numpy(obs["agentview_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
-                    "observation.images.camera2": torch.from_numpy(obs["eye_in_hand_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
+                    "observation.images.camera1": torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
+                    "observation.images.camera2": torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
                     "observation.images.camera3": torch.zeros(1, 3, 128, 128),
                     "observation.state": torch.from_numpy(
-                        np.concatenate([obs["joint_states"], obs["gripper_states"][:1]])
+                        np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
                     ).float().unsqueeze(0),
                     "task": [task_str],
                 }
@@ -184,6 +183,7 @@ def main():
     p.add_argument("--ckpt", type=str, default="", help="smolvla checkpoint 目录")
     p.add_argument("--verifier", type=str, default="", help="E0 动态头 checkpoint（smolvla_v 用）")
     p.add_argument("--n-cand", type=int, default=5, help="best-of-N 候选数")
+    p.add_argument("--n-tasks", type=int, default=0, help="0=全部任务")
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args()
 
@@ -191,7 +191,8 @@ def main():
 
     suite = benchmark.get_benchmark_dict()[args.suite]()
     n_tasks = suite.get_num_tasks()
-    jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier, args.n_cand) for i in range(n_tasks)]
+    n_run = args.n_tasks or n_tasks
+    jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier, args.n_cand, "") for i in range(n_run)]
     print(f"[eval] {args.suite}: {n_tasks} tasks × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
 
     t0 = time.time()

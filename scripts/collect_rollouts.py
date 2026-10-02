@@ -49,19 +49,19 @@ def rollout_one_task(args):
         done, step = False, 0
         while not done and step < 500:
             batch = {
-                "observation.images.camera1": torch.from_numpy(obs["agentview_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
-                "observation.images.camera2": torch.from_numpy(obs["eye_in_hand_rgb"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
+                "observation.images.camera1": torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
+                "observation.images.camera2": torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0,
                 "observation.images.camera3": torch.zeros(1, 3, 128, 128),
                 "observation.state": torch.from_numpy(
-                    np.concatenate([obs["joint_states"], obs["gripper_states"][:1]])
+                    np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
                 ).float().unsqueeze(0),
                 "task": [task_str],
             }
             with torch.inference_mode():
                 a = pol.select_action(batch)
             action = a.squeeze(0).numpy()[: env.env.action_dim]
-            frames_a.append(obs["agentview_rgb"]); frames_w.append(obs["eye_in_hand_rgb"])
-            joints.append(obs["joint_states"]); grips.append(obs["gripper_states"])
+            frames_a.append(obs["agentview_image"]); frames_w.append(obs["robot0_eye_in_hand_image"])
+            joints.append(obs["robot0_joint_pos"]); grips.append(obs["robot0_gripper_qpos"])
             acts.append(action)
             obs, _, done, _ = env.step(action)
             step += 1
