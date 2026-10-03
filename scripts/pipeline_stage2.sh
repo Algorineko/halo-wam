@@ -20,7 +20,9 @@ python scripts/eval_libero_parallel.py --suite libero_spatial --episodes 10 --wo
 echo "$(date +%H:%M) halo_h v3 done -> act_dino train" >> logs/pipeline2.log
 
 # ② act_dino 训练（card 1，DINOv2 冻结特征基线）
-CUDA_VISIBLE_DEVICES=1 python scripts/train_act_dino.py --steps 15000 \
+# 注意：勿加 CUDA_VISIBLE_DEVICES=1 —— DTK 上 CVD + torch.manual_seed 懒初始化会
+# IndexError（default_generators 越界）；脚本内部写死 cuda:1
+python scripts/train_act_dino.py --steps 15000 \
   > logs/train_act_dino.log 2>&1
 
 echo "$(date +%H:%M) act_dino trained -> act_dino eval" >> logs/pipeline2.log
