@@ -53,6 +53,18 @@ def run_one_task(args):
         inv_vocab = {v: k for k, v in vocab.items()}
         pol = HaloACT(dim=ck["args"].get("dim", 256), chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).to("cpu").eval()
         pol.load_state_dict(ck["model"])
+    if policy == "haloact_d":
+        import sys
+
+        sys.path.insert(0, "/home/tione/notebook/home/arianliu/project/halo-wam/src")
+        from halo.act_policy_dino import HaloACTD
+
+        ck = torch.load(ckpt, map_location="cpu", weights_only=False)
+        vocab = ck["vocab"]
+        inv_vocab = {v: k for k, v in vocab.items()}
+        # DINOv2 特征走 GPU（card 0），CPU 每 chunk 提特征太慢
+        pol = HaloACTD(dim=ck["args"].get("dim", 256), chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).cuda().eval()
+        pol.load_state_dict(ck["model"])
     if policy in ("haloact_v", "haloact_h"):
         import sys
 
@@ -128,12 +140,13 @@ def run_one_task(args):
                 obs, _, done, _ = env.step(action)
                 step += 1
                 continue
-            elif policy == "haloact":
+            elif policy in ("haloact", "haloact_d"):
                 state = np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
-                a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
-                a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
-                st = torch.from_numpy(state).float().unsqueeze(0)
-                tid = torch.tensor([vocab[task.name]])
+                dev = "cuda" if policy == "haloact_d" else "cpu"
+                a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0).to(dev) / 255.0
+                a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0).to(dev) / 255.0
+                st = torch.from_numpy(state).float().unsqueeze(0).to(dev)
+                tid = torch.tensor([vocab[task.name]]).to(dev)
                 with torch.inference_mode():
                     if not act_queue:
                         chunk = pol(a1, a2, st, tid)[0].clamp(-1, 1)  # (13,7)
@@ -200,7 +213,7 @@ def main():
     p.add_argument("--suite", type=str, default="libero_spatial")
     p.add_argument("--episodes", type=int, default=5)
     p.add_argument("--workers", type=int, default=32)
-    p.add_argument("--policy", type=str, default="random", choices=["random", "haloact", "haloact_v", "haloact_h"])
+    p.add_argument("--policy", type=str, default="random", choices=["random", "haloact", "haloact_v", "haloact_h", "haloact_d"])
     p.add_argument("--ckpt", type=str, default="", help="smolvla checkpoint 目录")
     p.add_argument("--verifier", type=str, default="", help="E0 动态头 checkpoint（smolvla_v 用）")
     p.add_argument("--n-cand", type=int, default=5, help="best-of-N 候选数")

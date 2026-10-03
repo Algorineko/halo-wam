@@ -30,7 +30,8 @@ def rollout_one_task(args):
     if pol_kind == "haloact":
         from halo.act_policy import HaloACT
         _ck = torch.load(ckpt, map_location="cpu", weights_only=False)
-        pol = HaloACT(dim=256, chunk=_ck["args"]["chunk"], n_tasks=len(_ck["vocab"]), act_dim=7).cuda().eval()
+        pol = HaloACT(dim=_ck["args"].get("dim", 256), chunk=_ck["args"]["chunk"],
+                      n_tasks=len(_ck["vocab"]), act_dim=7).cuda().eval()
         pol.load_state_dict(_ck["model"])
         _vocab = _ck["vocab"]
     else:
