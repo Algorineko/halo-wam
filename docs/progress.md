@@ -105,7 +105,17 @@ checkpoint 已传 ModelScope（e0_prod/dyn_ens_k5_s4000.pt）。生产版世界�
 - pipeline_stage3.sh 挂起：pipeline2 完成后自动跑 swap/object × {基线, 验证器} 4 臂（10 eps）
   清洁基线沿用 R3（11.0% / 19.0%）
 
-### 🩺 奖励头捷径学习诊断 + E1-v3 立项（2026-10-03 10:05）
+### 🔄 E1-v3 设计迭代（2026-10-03 11:20）：on-policy 正样本路线证伪 → demo-ctx 配对
+- act60k 采样 72 eps 仅 2 成功（4%，且全部集中在 task3 cookie_box）——on-policy 正样本
+  不足以支撑跨任务奖励头，**路线证伪**，采样中止
+- **新设计（demo-ctx 配对判别）**：ctx 一律 demo，pair 内共享同一 ctx，唯一变量是动作块
+  （pos=demo 动作 / neg1=同任务失败 rollout 动作 / neg2=跨任务 demo 动作）——
+  视觉捷径被"同 ctx 配对"结构性封死，数据无瓶颈（500 demo + 149 失败 rollout 全在盘上）
+- 已开训：6450 训练样本（2150 pos），demo 按 episode / rollout 按文件留出，AUC 选模
+  DTK 坑 +1：CUDA_VISIBLE_DEVICES=1 + torch.manual_seed 懒初始化 → default_generators
+  IndexError；去掉 CVD（脚本本就写死 cuda:1）即愈
+- 链路已重排：e1v3 训练（~11:45）→ pipeline2（halo_h v3 复测 → act_dino → 评测）→
+  r3fix（task7/8 补跑）→ pipeline3（LIBERO-PRO 四臂）
 - **发现**：e1 v1/v2 训练日志 acc=1.000 / bce=0.0000——demo(+)/失败rollout(−) 是**跨分布二分类**，
   奖励头学成"demo 检测器"而非"动作→成功"预测器；在线打分时策略 rollout 的 ctx 全被饱和判负，
   候选间无判别力 → 解释 R2/λ 扫描中完整 HALO 臂始终逊于纯不确定性臂
