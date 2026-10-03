@@ -2,7 +2,25 @@
 
 > 本文件是活文档：每个 cron tick / 工作会话后更新。计划见 [plan.md](plan.md)。
 
-## 当前状态（更新于 2026-10-03 22:10）——四条战线闭环，主结果定型
+## 当前状态（更新于 2026-10-03 23:10）——⏸️ 已让路停机，算力全释放
+
+> **2026-10-03 23:05 用户指示：此工作给其他项目让步。** 已停止全部算力占用：
+> 双卡 0%（hy-smi 确认）、cgroup 8.1GB（系统基线）、双 cronjob（自监督 4c6cba61 /
+> 看门狗 d5ebafd1）已删除、所有 halo-wam 进程清零。**恢复时无需重建环境**：
+> `bash scripts/pipeline_stage5.sh` 重跑即续（data 已在盘，脚本幂等）。
+
+### 停机时点的 multi-suite 进度（pipeline5）
+| 臂 | 状态 |
+|---|---|
+| libero_object 基线 | ✅ **7.0%**（eval_results/libero_object_haloact_20261003_225938.json）|
+| libero_object 验证器 | ⏸️ 运行中被停（约 60/70min，无结果）|
+| libero_goal 基线 / 验证器 | 未开始 |
+
+**恢复后的首批动作**：① 重跑 pipeline5 剩余三臂（~3.5h）→ 三 suite 主结果表齐
+② E3 迭代式蒸馏决策（×4 状态 + 高边际过滤 + 2-3 轮）③ n-cand 敏感性 +
+打分延迟 microbench（paper_outline.md 写作前置清单）
+
+### 战线快照（同下表，四条战线已闭环）
 
 | 战线 | 结果 | 定位 |
 |---|---|---|
