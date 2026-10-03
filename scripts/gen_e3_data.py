@@ -65,15 +65,15 @@ def main():
     def score_batch(ctx_frames, acts, task_name):
         """ctx (M,2,H,W,3) uint8, acts (M,N,13,7) → rewards (M,N), stds (M,N)"""
         M, N = acts.shape[:2]
-        cam = torch.from_numpy(ctx_frames).to(dev).float().permute(0, 1, 4, 2, 3) / 255.0  # (M,2,3,H,W)
+        cam = torch.from_numpy(ctx_frames).to(dev).float()  # (M,2,H,W,3) encode 内部归一化
         z = enc.encode(cam)                       # (M,1,16,16,1024) 2帧→1 tubelet
         ctx_tok = z.reshape(M, -1, 1024)          # (M,256,D) 与 e1_v3 训练严格一致
         ctx_rep = ctx_tok.unsqueeze(1).expand(M, N, -1, -1).reshape(M * N, -1, 1024)
         a = torch.from_numpy(acts.reshape(M * N, 13, 7)).to(dev)
-        stds = ens.epistemic_std(ctx_rep, a).mean(-1).reshape(M, N)
         with torch.autocast("cuda", dtype=torch.bfloat16):
+            stds = ens.epistemic_std(ctx_rep, a).mean(-1).reshape(M, N)
             fut = ens(ctx_rep, a.to(ctx_tok.dtype))
-        fut_tok = fut.float().mean(1)
+        fut_tok = fut.float().mean(0)  # (K,B,Nf,D) ensemble 均值 → (B,Nf,D)
         tid = torch.tensor([vocab[task_name]] * (M * N), device=dev)
         rew = rhead(ctx_rep.float(), fut_tok, tid).reshape(M, N)
         return rew.float().cpu().numpy(), stds.float().cpu().numpy()
@@ -95,7 +95,7 @@ def main():
             cam1 = torch.from_numpy(ctx[0]).permute(2, 0, 1).float().unsqueeze(0).to(dev) / 255.0
             cam2 = torch.from_numpy(ctx[1]).permute(2, 0, 1).float().unsqueeze(0).to(dev) / 255.0
             stt = torch.from_numpy(st).float().unsqueeze(0).to(dev)
-            tt = torch.tensor([tid]).to(dev)
+            tt = torch.tensor([tid[0]]).to(dev)
             for n in range(N):
                 with torch.inference_mode():
                     chunk = pol(cam1, cam2, stt, tt)[0] + torch.randn(13, 7, device=dev) * args.noise
