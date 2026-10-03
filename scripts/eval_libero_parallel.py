@@ -22,7 +22,7 @@ _RESULT_DIR = "/home/tione/notebook/home/arianliu/project/halo-wam/eval_results"
 
 def run_one_task(args):
     """子进程：跑一个任务的 n 个 episode，返回成功率。"""
-    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand, dump_dir, reward_ckpt, lambda_u = args
+    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand, dump_dir, reward_ckpt, lambda_u, task_spec = args
     os.environ.setdefault("MUJOCO_GL", "osmesa")
     os.environ.setdefault("PYOPENGL_PLATFORM", "osmesa")
     os.environ.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
@@ -34,11 +34,22 @@ def run_one_task(args):
     from libero.libero import benchmark
     from libero.libero.envs import OffScreenRenderEnv
 
-    suite = benchmark.get_benchmark_dict()[suite_name]()
-    task = suite.get_task(task_idx)
-    task_str = task.name.replace("_", " ")
-    init_states = suite.get_task_init_states(task_idx)
-    bddl = suite.get_task_bddl_file_path(task_idx)
+    if task_spec is not None:
+        # LIBERO-PRO 扰动直通：name/bddl/init 全由 spec 提供（name 与原任务一致 → vocab 兼容）
+        class _T:
+            pass
+        task = _T()
+        task.name = task_spec["name"]
+        task.language = task_spec.get("language", task.name.replace("_", " "))
+        task_str = task.name.replace("_", " ")
+        init_states = torch.load(task_spec["init"], map_location="cpu", weights_only=False)
+        bddl = task_spec["bddl"]
+    else:
+        suite = benchmark.get_benchmark_dict()[suite_name]()
+        task = suite.get_task(task_idx)
+        task_str = task.name.replace("_", " ")
+        init_states = suite.get_task_init_states(task_idx)
+        bddl = suite.get_task_bddl_file_path(task_idx)
 
     pol = None
     verifier_scorer = None
@@ -220,16 +231,26 @@ def main():
     p.add_argument("--reward-ckpt", type=str, default="", help="E1 奖励头（haloact_h 用）")
     p.add_argument("--lambda-u", type=float, default=1.0, help="不确定性惩罚权重")
     p.add_argument("--n-tasks", type=int, default=0, help="0=全部任务")
+    p.add_argument("--task-spec", type=str, default="", help="LIBERO-PRO 直通 JSON：[{name,bddl,init}]（--suite 仅作结果标签）")
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args()
 
-    from libero.libero import benchmark
+    if args.task_spec:
+        with open(args.task_spec) as f:
+            specs = json.load(f)
+        n_run = args.n_tasks or len(specs)
+        jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier,
+                 args.n_cand, "", args.reward_ckpt, args.lambda_u, specs[i]) for i in range(n_run)]
+        print(f"[eval] {args.suite} (task-spec): {n_run} tasks × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
+    else:
+        from libero.libero import benchmark
 
-    suite = benchmark.get_benchmark_dict()[args.suite]()
-    n_tasks = suite.get_num_tasks()
-    n_run = args.n_tasks or n_tasks
-    jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier, args.n_cand, "", args.reward_ckpt, args.lambda_u) for i in range(n_run)]
-    print(f"[eval] {args.suite}: {n_tasks} tasks × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
+        suite = benchmark.get_benchmark_dict()[args.suite]()
+        n_tasks = suite.get_num_tasks()
+        n_run = args.n_tasks or n_tasks
+        jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier,
+                 args.n_cand, "", args.reward_ckpt, args.lambda_u, None) for i in range(n_run)]
+        print(f"[eval] {args.suite}: {n_tasks} tasks × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
 
     t0 = time.time()
     # 子进程直评模式：multiprocessing spawn-pool 在本容器会随机挂起，改为每任务独立子进程
