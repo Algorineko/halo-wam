@@ -93,6 +93,38 @@ checkpoint 已传 ModelScope（e0_prod/dyn_ens_k5_s4000.pt）。生产版世界�
 - **再次确认：val-mse 与在线成功率完全脱节**；TinyViT 加宽路线证伪，基线锁定 act60k
 - E2-R3 启动：10-eps 降噪三臂复测（基线/纯不确定性/λ0.25 完整 HALO）
 
+### 🌍 LIBERO-PRO 泛化验证基建就绪（2026-10-03 10:25，W13 前置）
+- 官方 HF 扰动数据落地（hf-mirror）：spatial 的 **swap**（plate/ramekin 位置互换）与
+  **object**（black_bowl/yellow_plate 外观替换）两轴，goal 不变、10 任务/轴、配套 pruned_init 50 态
+- eval_libero_parallel.py 新增 `--task-spec` 直通模式：扰动任务与原任务同名 →
+  HaloACT vocab 与奖励头 vocab 天然兼容，无需重训/注册
+- LIBERO 安装打补丁：google_scanned_objects.py 换成 LIBERO-PRO 严格超集（+7 资产类），
+  资产树补 7 类；**20/20 扰动 env 冒烟通过**；原 .bak 备份保留
+- 设计取舍：HaloACT 是 goal-blind 策略（task_emb 无语言输入）→ lan/task 扰动维无意义，只测
+  swap/object 视觉物理轴。主张：**验证器增益（+73% 相对）在 OOD 场景下是否保持**
+- pipeline_stage3.sh 挂起：pipeline2 完成后自动跑 swap/object × {基线, 验证器} 4 臂（10 eps）
+  清洁基线沿用 R3（11.0% / 19.0%）
+
+### 🩺 奖励头捷径学习诊断 + E1-v3 立项（2026-10-03 10:05）
+- **发现**：e1 v1/v2 训练日志 acc=1.000 / bce=0.0000——demo(+)/失败rollout(−) 是**跨分布二分类**，
+  奖励头学成"demo 检测器"而非"动作→成功"预测器；在线打分时策略 rollout 的 ctx 全被饱和判负，
+  候选间无判别力 → 解释 R2/λ 扫描中完整 HALO 臂始终逊于纯不确定性臂
+- **修复（E1-v3，scripts/train_e1_v3.py）**：正负样本全部来自**同一策略的 rollout**（同分布，唯一差异成败）：
+  pos=成功 episode 窗口 / neg1=失败 episode 窗口 / neg2=同 ctx 接失败动作块（教动作条件化）；
+  **episode 级留出** + VAL-AUC 选模（窗口级切分会被相邻帧重叠污染）
+- 正样本瓶颈：act_15k 的 80 条 rollout 仅 1 条成功 → 已排产 act60k 大规模采样（10 任务×24 eps，
+  预期 ~30 条成功，pipeline_e1v3.sh 串行在 R3 之后）
+- 同步立项 HaloACT-D（act_policy_dino.py）：冻结 DINOv2-small 特征 + **token 级 memory**
+  （512 视觉 token cross-attend，解除现版双相机 mean-pool 成单 token 的瓶颈），可训练 3.3M，
+  weights 已下（hf-mirror），冒烟通过；训练排在 halo_h v3 复测后（pipeline_stage2.sh）
+
+### 📊 R3 10-eps 降噪三臂（2026-10-03，运行中）
+| 臂 | 5-eps（R2/λ扫描） | 10-eps（R3） |
+|---|---|---|
+| haloact 基线（act60k） | 10.0% | **11.0%** ✅ 稳 |
+| 纯不确定性 best-of-5 | 18.0% | **19.0%** ✅ 稳，+73% 相对 |
+| 完整 HALO（λ0.25, e1_v2） | 16.0% | 运行中（~10:55） |
+
 ### 📈 λ 扫描完成（2026-10-03 06:54，act60k + e1_v2 奖励头）
 | 配置 | 平均成功率 |
 |---|---|
