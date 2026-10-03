@@ -43,12 +43,14 @@ class DistillDataset(Dataset):
                 self.task[i], torch.from_numpy(self.chosen[i]))
 
 
-def collate(b):
-    ctx = torch.stack([x[0] for x in b])
-    st = torch.stack([x[1] for x in b])
-    ch = torch.stack([x[3] for x in b])
-    tid = torch.tensor([ds.vocab[x[2]] for x in b])
-    return ctx, st, tid, ch
+def make_collate(vocab):
+    def collate(b):
+        ctx = torch.stack([x[0] for x in b])
+        st = torch.stack([x[1] for x in b])
+        ch = torch.stack([x[3] for x in b])
+        tid = torch.tensor([vocab[x[2]] for x in b])
+        return ctx, st, tid, ch
+    return collate
 
 
 def main():
@@ -81,9 +83,9 @@ def main():
     print(f"[e3sft] init from {args.init} (val-mse {ck.get('val', '?')})")
 
     dl = DataLoader(torch.utils.data.Subset(ds, tr_idx), batch_size=args.bs, shuffle=True,
-                    num_workers=4, collate_fn=collate, drop_last=True, persistent_workers=True)
+                    num_workers=4, collate_fn=make_collate(ds.vocab), drop_last=True, persistent_workers=True)
     dl_val = DataLoader(torch.utils.data.Subset(ds, va_idx), batch_size=args.bs, shuffle=False,
-                        num_workers=2, collate_fn=collate)
+                        num_workers=2, collate_fn=make_collate(ds.vocab))
 
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.05)
 
@@ -119,12 +121,12 @@ def main():
                 if vl < best:
                     best = vl
                     torch.save({"model": model.state_dict(), "vocab": ds.vocab,
-                                "args": vars(ck["args"]) | {"chunk": 13, "dim": 256}},
+                                "args": dict(ck["args"]) | {"chunk": 13, "dim": 256}},
                                os.path.join(args.out, "best.pt"))
                 model.train()
             it += 1
     torch.save({"model": model.state_dict(), "vocab": ds.vocab,
-                "args": vars(ck["args"]) | {"chunk": 13, "dim": 256}},
+                "args": dict(ck["args"]) | {"chunk": 13, "dim": 256}},
                os.path.join(args.out, "last.pt"))
     print(f"[e3sft] DONE best-val {best:.5f} -> {args.out}")
 
