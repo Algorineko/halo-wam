@@ -231,6 +231,7 @@ def main():
     p.add_argument("--reward-ckpt", type=str, default="", help="E1 奖励头（haloact_h 用）")
     p.add_argument("--lambda-u", type=float, default=1.0, help="不确定性惩罚权重")
     p.add_argument("--n-tasks", type=int, default=0, help="0=全部任务")
+    p.add_argument("--task-ids", type=str, default="", help="逗号分隔任务号子集（suite 模式，断点补跑用）")
     p.add_argument("--task-spec", type=str, default="", help="LIBERO-PRO 直通 JSON：[{name,bddl,init}]（--suite 仅作结果标签）")
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args()
@@ -247,10 +248,10 @@ def main():
 
         suite = benchmark.get_benchmark_dict()[args.suite]()
         n_tasks = suite.get_num_tasks()
-        n_run = args.n_tasks or n_tasks
+        ids = [int(x) for x in args.task_ids.split(",") if x] or list(range(args.n_tasks or n_tasks))
         jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier,
-                 args.n_cand, "", args.reward_ckpt, args.lambda_u, None) for i in range(n_run)]
-        print(f"[eval] {args.suite}: {n_tasks} tasks × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
+                 args.n_cand, "", args.reward_ckpt, args.lambda_u, None) for i in ids]
+        print(f"[eval] {args.suite}: tasks {ids if len(ids) < n_tasks else f'0..{n_tasks-1}'} × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
 
     t0 = time.time()
     # 子进程直评模式：multiprocessing spawn-pool 在本容器会随机挂起，改为每任务独立子进程
