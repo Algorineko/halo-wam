@@ -118,6 +118,16 @@ checkpoint 已传 ModelScope（e0_prod/dyn_ens_k5_s4000.pt）。生产版世界�
   （512 视觉 token cross-attend，解除现版双相机 mean-pool 成单 token 的瓶颈），可训练 3.3M，
   weights 已下（hf-mirror），冒烟通过；训练排在 halo_h v3 复测后（pipeline_stage2.sh）
 
+### 🚨 OOM 复盘二号（2026-10-03 10:54）：评测与采样不可共存
+- **oom_kill 计数 18→27**：halo 臂 task7/8 补跑（2 workers，各加载 V-JEPA ~6GB 峰值）与
+  act60k 采样（6 workers）同时跑 → cgroup 32GB 击穿，每对并发子进程恰好死一个（无 traceback，
+  stderr 止于 torch.load 警告 = SIGKILL 特征）
+- **新铁律：rollout 采集与 GPU 评测（加载编码器）串行**；采集 + card1 训练可共存（~18GB）
+- 修复：pipeline_r3fix.sh 等采样 DONE 后以 workers=1 补跑 task7/8（与 e1v3 训练共存，预算 ~18GB）
+- 现有 R3 halo 中间值：task0-6,9 有效 = 19/80 eps = **23.8%**；task7/8 待补（区间 [19%, 23%]）
+  ——无论补跑结果如何，**完整 HALO 臂（reward−λ·std, λ0.25, v2 头）≥ 纯不确定性臂（19.0%）**，
+  与 R2 5-eps 的"融合不如纯不确定性"结论相反——10-eps 降噪后融合价值开始显现，待 task7/8 定谳
+
 ### 📊 R3 10-eps 降噪三臂（2026-10-03，halo 臂补跑中）
 | 臂 | 5-eps（R2/λ扫描） | 10-eps（R3） |
 |---|---|---|
