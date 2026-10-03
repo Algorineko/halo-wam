@@ -105,6 +105,12 @@ checkpoint 已传 ModelScope（e0_prod/dyn_ens_k5_s4000.pt）。生产版世界�
 - pipeline_stage3.sh 挂起：pipeline2 完成后自动跑 swap/object × {基线, 验证器} 4 臂（10 eps）
   清洁基线沿用 R3（11.0% / 19.0%）
 
+### 🏆 E1-v3 训练完成（2026-10-03 11:52）：VAL-AUC 0.933，首个诚实奖励头
+- 曲线 0.827(300)→0.901(600)→**0.933(最终)** 单调爬升，留出为完整 demo episode——
+  对比 v1/v2 的 acc=1.0 捷径（无判别意义），这是**动作条件化判别力**首次成立
+- 已传 ModelScope（e1_v3/reward_head.pt）；pipeline2 已自动触发 halo_h v3 复测
+  （λ=0.25 与 R3 严格可比，唯一变量奖励头 v2→v3，ETA ~12:50）
+
 ### 🔄 E1-v3 设计迭代（2026-10-03 11:20）：on-policy 正样本路线证伪 → demo-ctx 配对
 - act60k 采样 72 eps 仅 2 成功（4%，且全部集中在 task3 cookie_box）——on-policy 正样本
   不足以支撑跨任务奖励头，**路线证伪**，采样中止
