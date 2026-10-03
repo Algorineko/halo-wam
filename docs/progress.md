@@ -105,6 +105,17 @@ checkpoint 已传 ModelScope（e0_prod/dyn_ens_k5_s4000.pt）。生产版世界�
 - pipeline_stage3.sh 挂起：pipeline2 完成后自动跑 swap/object × {基线, 验证器} 4 臂（10 eps）
   清洁基线沿用 R3（11.0% / 19.0%）
 
+### 📉 act_dino 负结果定案（2026-10-03 15:40）：DINOv2 冻结基线在线 0.0%
+- act_dino（val-mse 0.0466 ≈ act60k 0.0427）在线 **0/100 eps**——单 chunk 输出分布、步间抖动、
+  逐维误差均与 act60k 同量级（dino dim0 误差 +52% 是唯一显著差异），但闭环行为不成立
+- 诊断插曲（两次虚惊，教训入册）：自建探针用 **xy-only + 200 步均值**度量 eef 移动，
+  把「垂直下探 + 500 步任务」的正常运动误判为冻结——**探针指标必须用 3D 位移与任务真实步长**；
+  demo 重放对照（eef 0.52 正常）+ 逐步插桩（Δeef 0.004→0.02 协同增长）还原真相
+- 定案：DINOv2-small 冻结特征（ImageNet 224px）对 LIBERO 闭环操作的空间精度不足，
+  TinyViT 从零学特征反而更适合本域。基线维持 act60k；**val-mse≠在线 第四次实证**
+- 论文价值：进入 baseline 分析段——"预训练视觉先验未必优于小规模域内特征"，与
+  SmolVLA/lerobot 失败一起构成完整的基线消融故事
+
 ### 🏗️ E3-A 蒸馏数据就绪（2026-10-03 14:55）：1800 状态，选择质量健康
 - gen_e3_data 冒烟连抓 3 bug（tuple tid / encode 预处理 / mean 维度）修复后跑通：
   10 任务 × 200 状态（50 demo × 4 窗口），std p90 门控留 1800
