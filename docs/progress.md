@@ -105,6 +105,14 @@ checkpoint 已传 ModelScope（e0_prod/dyn_ens_k5_s4000.pt）。生产版世界�
 - pipeline_stage3.sh 挂起：pipeline2 完成后自动跑 swap/object × {基线, 验证器} 4 臂（10 eps）
   清洁基线沿用 R3（11.0% / 19.0%）
 
+### 🏗️ E3-A 蒸馏数据就绪（2026-10-03 14:55）：1800 状态，选择质量健康
+- gen_e3_data 冒烟连抓 3 bug（tuple tid / encode 预处理 / mean 维度）修复后跑通：
+  10 任务 × 200 状态（50 demo × 4 窗口），std p90 门控留 1800
+- 质量指标：候选间 score 跨度 p10 −1.6 / p90 +2.4（判别强）；top−2nd margin mean 0.074；
+  **chosen 对 demo 动作偏离 L1 0.12**——验证器在真引导（非复读 demo）且不出分布
+- 下游：pipeline4（pipeline3 后）→ SFT 8k 步（act60k 热启）→ act_e3 裸跑评测
+  判据：> 基线 11.0% 即蒸馏有效，逼近 19.0% 则验证器能力已吸收进策略
+
 ### 🎯 E2 定谳（2026-10-03 13:15，13:55 补全）：奖励头至多打平，纯不确定性是在线赢家
 | 臂（10-eps） | 成功率 | 备注 |
 |---|---|---|
