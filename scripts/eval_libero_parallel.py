@@ -62,7 +62,7 @@ def run_one_task(args):
         ck = torch.load(ckpt, map_location="cpu", weights_only=False)
         vocab = ck["vocab"]
         inv_vocab = {v: k for k, v in vocab.items()}
-        pol = HaloACT(dim=ck["args"].get("dim", 256), chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).to("cpu").eval()
+        pol = HaloACT(dim=ck["args"].get("dim", 256), chunk=ck["args"]["chunk"], n_tasks=ck["args"].get("n_tasks", len(vocab)), act_dim=7).to("cpu").eval()
         pol.load_state_dict(ck["model"])
     if policy == "haloact_d":
         import sys

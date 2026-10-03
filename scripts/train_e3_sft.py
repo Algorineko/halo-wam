@@ -121,12 +121,12 @@ def main():
                 if vl < best:
                     best = vl
                     torch.save({"model": model.state_dict(), "vocab": ds.vocab,
-                                "args": dict(ck["args"]) | {"chunk": 13, "dim": 256}},
+                                "args": dict(ck["args"]) | {"chunk": 13, "dim": 256, "n_tasks": model.task_emb.weight.shape[0]}},
                                os.path.join(args.out, "best.pt"))
                 model.train()
             it += 1
     torch.save({"model": model.state_dict(), "vocab": ds.vocab,
-                "args": dict(ck["args"]) | {"chunk": 13, "dim": 256}},
+                "args": dict(ck["args"]) | {"chunk": 13, "dim": 256, "n_tasks": model.task_emb.weight.shape[0]}},
                os.path.join(args.out, "last.pt"))
     print(f"[e3sft] DONE best-val {best:.5f} -> {args.out}")
 
