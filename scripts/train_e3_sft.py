@@ -24,13 +24,21 @@ HALO_DATA = "/home/tione/notebook/home/arianliu/data/halo-wam"
 
 
 class DistillDataset(Dataset):
-    def __init__(self, path):
+    def __init__(self, path, margin_pmin=0.0):
         with h5py.File(path, "r") as f:
             self.ctx = f["ctx"][:]
             self.state = f["state"][:]
             self.chosen = f["chosen"][:]
             self.task = [t.decode() if isinstance(t, bytes) else t for t in f["task"][:]]
             self.ep = [t.decode() if isinstance(t, bytes) else t for t in f["ep"][:]]
+            if margin_pmin > 0 and "margin" in f:
+                margin = f["margin"][:]
+                thr = float(np.quantile(margin, margin_pmin))
+                keep = margin > thr
+                print(f"[e3sft] margin>p{int(margin_pmin*100)} ({thr:.4f}): keep {keep.sum()}/{len(keep)}")
+                self.ctx, self.state, self.chosen = self.ctx[keep], self.state[keep], self.chosen[keep]
+                self.task = [t for t, k in zip(self.task, keep) if k]
+                self.ep = [t for t, k in zip(self.ep, keep) if k]
         self.vocab = {}
         for t in sorted(set(self.task)):
             self.vocab[t] = len(self.vocab)
@@ -61,11 +69,12 @@ def main():
     ap.add_argument("--lr", type=float, default=5e-5, help="热启微调小学习率")
     ap.add_argument("--init", type=str, default="checkpoints/act60k/best.pt")
     ap.add_argument("--out", type=str, default="checkpoints/act_e3")
+    ap.add_argument("--margin-pmin", type=float, default=0.0, help="按 margin 分位过滤（0.5=留高边际一半）")
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
     torch.manual_seed(0)
 
-    ds = DistillDataset(args.data)
+    ds = DistillDataset(args.data, margin_pmin=args.margin_pmin)
     eps = sorted(set(ds.ep))
     rng = np.random.RandomState(0)
     rng.shuffle(eps)
