@@ -54,7 +54,7 @@ def main():
     dev = "cuda:0"
     model = HaloACT(dim=args.dim, chunk=args.chunk, n_tasks=len(vocab), act_dim=7).to(dev)
     print(f"[act] params: {sum(p.numel() for p in model.parameters())/1e6:.1f}M")
-    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.05)
+    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.05, foreach=False)
 
     def to_dev(b):
         def img(t):

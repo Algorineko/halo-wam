@@ -58,7 +58,7 @@ def main():
     n_params = sum(p.numel() for p in ens.parameters())
     print(f"[e0] ensemble: K={args.k}, {n_params/1e6:.1f}M params total")
 
-    opt = torch.optim.AdamW(ens.parameters(), lr=args.lr, weight_decay=0.05, betas=(0.9, 0.95))
+    opt = torch.optim.AdamW(ens.parameters(), lr=args.lr, weight_decay=0.05, betas=(0.9, 0.95), foreach=False)
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda s: 0.5 * (1 + math.cos(math.pi * min(s / args.steps, 1.0))))
 
     it, t0 = 0, time.time()

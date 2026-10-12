@@ -52,7 +52,7 @@ def main():
     model = HaloACTD(dim=args.dim, chunk=args.chunk, n_tasks=len(vocab), act_dim=7).to(dev)
     n_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"[act-d] trainable: {n_train/1e6:.1f}M (+ frozen dinov2-small 21M)")
-    opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad],
+    opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], foreach=False,
                             lr=args.lr, weight_decay=0.05)
 
     def to_dev(b):

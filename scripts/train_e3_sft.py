@@ -87,7 +87,7 @@ def main():
     dl_val = DataLoader(torch.utils.data.Subset(ds, va_idx), batch_size=args.bs, shuffle=False,
                         num_workers=2, collate_fn=make_collate(ds.vocab))
 
-    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.05)
+    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.05, foreach=False)
 
     def to_dev(ctx, st, tid):
         img = ctx.to(dev).float().permute(0, 1, 4, 2, 3) / 255.0  # (B,2,3,H,W)

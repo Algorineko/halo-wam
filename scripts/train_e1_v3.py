@@ -189,7 +189,7 @@ def main():
         p.requires_grad_(False)
 
     head = RewardHead(dim=1024, n_tasks=len(vocab)).to(dev)
-    opt = torch.optim.AdamW(head.parameters(), lr=args.lr, weight_decay=0.01)
+    opt = torch.optim.AdamW(head.parameters(), lr=args.lr, weight_decay=0.01, foreach=False)
     pos_w = torch.tensor(1.0, device=dev)  # 1:1:1 构造天然平衡
 
     import time

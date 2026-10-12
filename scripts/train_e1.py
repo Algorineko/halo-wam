@@ -117,7 +117,7 @@ def main():
         p.requires_grad_(False)
 
     head = RewardHead(dim=1024, n_tasks=len(vocab)).to(dev)
-    opt = torch.optim.AdamW(head.parameters(), lr=args.lr, weight_decay=0.01)
+    opt = torch.optim.AdamW(head.parameters(), lr=args.lr, weight_decay=0.01, foreach=False)
     pos_w = torch.tensor([3.0], device=dev)  # 轻度正类加权
 
     import time
