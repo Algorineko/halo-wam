@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "suite": "libero_spatial",
+    "episodes": 10,
+    "workers": 2,
+    "policy": "haloact_h",
+    "ckpt": "checkpoints/act60k/best.pt",
+    "verifier": "checkpoints/e0v5/dyn_ens_k5_s2000.pt",
+    "n_cand": 5,
+    "reward_ckpt": "checkpoints/e1_v2/reward_head.pt",
+    "lambda_u": 0.25,
+    "n_tasks": 0,
+    "task_ids": "6,7,8,9",
+    "task_spec": "",
+    "seed": 0,
+    "wall_s": 1083.1,
+    "ts": "2026-10-03T10:52:56.912040"
+  },
+  "results": [
+    {
+      "task": "task7",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.\n  ck = torch.load(verifier, map_location=\"cuda:0\")"
+    },
+    {
+      "task": "task8",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.\n  ck = torch.load(verifier, map_location=\"cuda:0\")"
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 2,
+      "rate": 0.2,
+      "avg_steps": 421.1,
+      "wall_s": 932.8
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 1020.7
+    }
+  ],
+  "mean_rate": 0.05
+}

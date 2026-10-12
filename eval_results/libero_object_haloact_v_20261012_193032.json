@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "suite": "libero_object",
+    "episodes": 10,
+    "workers": 2,
+    "policy": "haloact_v",
+    "ckpt": "checkpoints/act60k/best.pt",
+    "verifier": "checkpoints/e0v5/dyn_ens_k5_s2000.pt",
+    "n_cand": 5,
+    "reward_ckpt": "",
+    "lambda_u": 1.0,
+    "n_tasks": 0,
+    "task_ids": "0,1",
+    "task_spec": "",
+    "seed": 0,
+    "wall_s": 760.8,
+    "ts": "2026-10-12T19:30:32.095037"
+  },
+  "results": [
+    {
+      "task": "pick_up_the_alphabet_soup_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 713.0
+    },
+    {
+      "task": "pick_up_the_cream_cheese_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 731.5
+    }
+  ],
+  "mean_rate": 0.0
+}

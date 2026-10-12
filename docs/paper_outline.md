@@ -5,20 +5,26 @@
 ## 标题（候选）
 1. **HALO: Uncertainty-Aware Latent World Models for Test-Time Verification of VLA Policies**
 2. Best-of-N with a Cheap Latent World Model: +73% In-Distribution Success for VLA Policies
-3. （回退线）Verifier-Gated Data Engines: Distilling Latent-World-Model Judgments into Policies
+3. **When Does Latent Uncertainty Verification Help VLA Policies?**（_suite 异质性定调后新增，最贴实际故事_）
+4. （回退线）Verifier-Gated Data Engines: Distilling Latent-World-Model Judgments into Policies
 
 ## 一句话主张
 在冻结 V-JEPA 2 隐空间上，deep-ensemble 认知不确定性作为 test-time 动作块验证器，
-以世界模型 1/100 的成本给 VLA 策略带来 +73% 相对成功率提升（LIBERO 三 suite）；
-并给出该增益的**分布内边界**的诚实刻画与机理分析。
+以世界模型 1/100 的成本给 VLA 策略带来 +73% 相对成功率提升（LIBERO-spatial）；
+并给出该增益的**精确边界**：增益只在"策略失败是认知性的（epistemic）"时存在——
+空间 suite +73%，物体 suite 反而负收益（7%→4%），OOD 扰动全无加成；
+三代奖励头对照证明信号载体是纯不确定性而非习得奖励。
 
 ## 摘要骨架
 - 背景缺口：WM-as-verifier 是活跃赛道，但现有验证器昂贵（生成式 rollout）或在 OOD 过自信
 - 方法：frozen V-JEPA 2 + 轻量 action-conditioned 动态头（动作对比损失）+ K-ensemble
   认知不确定性 → best-of-N 打分，免策略重训练
-- 主结果：LIBERO spatial/object/goal 三 suite，小策略基线 11%→19%（+73% 相对）
-- 边界（诚实卖点）：LIBERO-PRO 扰动下增益消失（swap 全崩 / object 无加成）——
-  不确定性信号是分布内现象；三代奖励头对照证明"加 reward 不如纯不确定性"
+- 主结果（**suite 异质性定调**）：spatial 11%→19%（+73% 相对）；object 7%→4%（**负收益**）；
+  goal 待出——验证器增益取决于失败模态，非普适免费午餐
+- 边界（诚实卖点升级为核心发现）：认知性失败（策略"会做但不确定怎么排布"）→ 候选分歧
+  承载选择信号；能力性失败（策略根本抓不住）→ 候选一致的坏，std 无信号甚至误导。
+  LIBERO-PRO 扰动下增益消失（swap 全崩 / object 无加成）与之互证
+- 机理对照：三代奖励头在线均无加成（诚实头 AUC 0.933 也一样）→ 不确定性信号独扛在线增益
 - 成本：动态头 6 层 transformer ×5，单候选打分 <50ms 级（vs 生成式世界模型 rollout）
 
 ## 1 Introduction
@@ -26,9 +32,11 @@
 - 缺口：廉价、隐空间、不确定性感知的验证器不存在（PLaW-VLA 的 LWM 是 action-free）
 - 贡献四条：
   C1 动作对比损失解决隐空间 WM 动作忽略问题（A_true/B_mismatch 诊断协议）
-  C2 纯不确定性 best-of-N 在线 +73%（三 suite，10-eps 降噪）
+  C2 纯不确定性 best-of-N 在线 +73%（spatial，10-eps 降噪）——及 **suite 异质性**：
+     object 负收益证明增益非普适
   C3 奖励头融合的三代对照与"在线≠离线"解耦发现（AUC 0.933 头在线无加成）
-  C4 OOD 边界刻画（LIBERO-PRO swap/object 双轴）——验证器增益是分布内现象
+  C4 增益边界的统一刻画：**失败模态假说**（epistemic vs capability regime）统摄
+     suite 异质性与 LIBERO-PRO OOD 崩塌（swap/object 双轴），per-task 散点检验
 
 ## 2 Related Work
 - Test-time verification: CoVer (Stanford)、RoboMonkey（均重 rollout / 需训练）；
@@ -58,12 +66,19 @@
 - HaloACT（8.1M TinyViT×2）：lerobot-train 在目标容器不可用的工程约束 → 自写策略
 - 基线谱系表：act15k 2% / act_v2(17.9M) 2% / act60k **10-11%** / act_dino(DINOv2冻结) 0%
   ——**val-mse 与在线成功率四次脱钩**（表格直接进论文，反对离线指标代理）
-### 4.2 主结果（三 suite 表，数据 pipeline5 出）
-| suite | base | +verifier | 相对 |
-|---|---|---|---|
-| spatial | 11.0% | 19.0% | +73% |
-| object / goal | 夜间出数 | | |
-- 分任务热力图：验证器把成功从 2 任务扩散到 5 任务
+### 4.2 主结果（三 suite 表，pipeline5/5b 出）
+| suite | base | +verifier | 相对 | 失败模态判读 |
+|---|---|---|---|---|
+| spatial | 11.0% | 19.0% | **+73%** | 认知性失败为主：策略会抓放，排布不确定 → 候选分歧有信号 |
+| object | 7.0% | **4.0%** | **−43%** | 能力性失败为主：低成功率 regime，候选一致的坏 → 纯不确定性选噪声 |
+| goal | （跑中） | （跑中） | | 关键判别点：若 + → "排布类任务可用"；若 − → 边界更普适 |
+- object 数据：base eval_results/libero_object_haloact_20261003_225938.json；
+  verifier 合并版 libero_object_haloact_v_MERGED10.json（8 干净任务 5.0% + 补跑 task0/1 均 0）
+- 分任务热力图：验证器把成功从 2 任务扩散到 5 任务（spatial）；object 上逐任务全无起色
+- **4.2.1 失败模态假说（新核心小节）**：epistemic regime（基线中等成功率、候选间
+  std 方差大）→ 验证器正收益；capability regime（基线低成功率、std 无判别力）→
+  零或负收益。检验：per-task 层面画 base 成功率 vs 验证器增量散点（预计负相关/
+  阈值效应）；LIBERO-PRO 结果作为分布外版本同图
 ### 4.3 奖励头消融（C3，三代对照）
 | 头 | 训练分布 | 离线 | 在线(λ0.25) |
 |---|---|---|---|

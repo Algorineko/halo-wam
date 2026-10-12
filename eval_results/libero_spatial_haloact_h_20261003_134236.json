@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "suite": "libero_spatial",
+    "episodes": 10,
+    "workers": 1,
+    "policy": "haloact_h",
+    "ckpt": "checkpoints/act60k/best.pt",
+    "verifier": "checkpoints/e0v5/dyn_ens_k5_s2000.pt",
+    "n_cand": 5,
+    "reward_ckpt": "checkpoints/e1_v2/reward_head.pt",
+    "lambda_u": 0.25,
+    "n_tasks": 0,
+    "task_ids": "7,8",
+    "task_spec": "",
+    "seed": 0,
+    "wall_s": 2256.3,
+    "ts": "2026-10-03T13:42:36.967599"
+  },
+  "results": [
+    {
+      "task": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 1091.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 1131.5
+    }
+  ],
+  "mean_rate": 0.0
+}

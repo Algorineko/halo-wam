@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "suite": "libero_spatial",
+    "episodes": 10,
+    "workers": 2,
+    "policy": "haloact_h",
+    "ckpt": "/home/tione/notebook/home/arianliu/project/halo-wam/checkpoints/act60k/best.pt",
+    "verifier": "checkpoints/e0v5/dyn_ens_k5_s2000.pt",
+    "n_cand": 5,
+    "reward_ckpt": "checkpoints/e1_v2/reward_head.pt",
+    "lambda_u": 0.25,
+    "n_tasks": 0,
+    "seed": 0,
+    "wall_s": 2790.8,
+    "ts": "2026-10-03T10:33:40.180799"
+  },
+  "results": [
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 5,
+      "rate": 0.5,
+      "avg_steps": 301.0,
+      "wall_s": 697.2
+    },
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 4,
+      "rate": 0.4,
+      "avg_steps": 346.0,
+      "wall_s": 791.3
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 5,
+      "rate": 0.5,
+      "avg_steps": 300.1,
+      "wall_s": 730.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 3,
+      "rate": 0.3,
+      "avg_steps": 388.1,
+      "wall_s": 851.6
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 1133.5
+    },
+    {
+      "task": "task6",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": " \"/home/tione/notebook/home/arianliu/project/halo-wam/scripts/eval_libero_parallel.py\", line 25, in run_one_task\n    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand, dump_dir, reward_ckpt, lambda_u, task_spec = args\nValueError: not enough values to unpack (expected 12, got 11)"
+    },
+    {
+      "task": "task7",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": " \"/home/tione/notebook/home/arianliu/project/halo-wam/scripts/eval_libero_parallel.py\", line 25, in run_one_task\n    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand, dump_dir, reward_ckpt, lambda_u, task_spec = args\nValueError: not enough values to unpack (expected 12, got 11)"
+    },
+    {
+      "task": "task8",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": " \"/home/tione/notebook/home/arianliu/project/halo-wam/scripts/eval_libero_parallel.py\", line 25, in run_one_task\n    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand, dump_dir, reward_ckpt, lambda_u, task_spec = args\nValueError: not enough values to unpack (expected 12, got 11)"
+    },
+    {
+      "task": "task9",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": " \"/home/tione/notebook/home/arianliu/project/halo-wam/scripts/eval_libero_parallel.py\", line 25, in run_one_task\n    task_idx, suite_name, n_episodes, seed, policy, ckpt, verifier, n_cand, dump_dir, reward_ckpt, lambda_u, task_spec = args\nValueError: not enough values to unpack (expected 12, got 11)"
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 1100.6
+    }
+  ],
+  "mean_rate": 0.16999999999999998
+}
