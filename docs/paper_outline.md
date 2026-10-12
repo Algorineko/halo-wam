@@ -37,6 +37,8 @@
   C3 奖励头融合的三代对照与"在线≠离线"解耦发现（AUC 0.933 头在线无加成）
   C4 增益边界的统一刻画：**失败模态假说**（epistemic vs capability regime）统摄
      suite 异质性与 LIBERO-PRO OOD 崩塌（swap/object 双轴），per-task 散点检验
+  C5（新）验证增益可蒸馏：R1 平价 → R2（×4 状态 + margin>p50）全额吸收（10→19%），
+     "蒸馏 = 验证的摊销"（部署零验证器开销）
 
 ## 2 Related Work
 - Test-time verification: CoVer (Stanford)、RoboMonkey（均重 rollout / 需训练）；
@@ -92,8 +94,14 @@
 - 主张收窄 + open problem
 ### 4.5 λ 敏感性与候选数
 - λ 扫描 {0.25,0.5,1.0}×2 头；n-cand 5（成本-收益曲线可补 3/10）
-### 4.6 后训练初探（E3-A R1，可作为 discussion 或删）
-- BoN 蒸馏 R1 平价（10%≈11%）：test-time 实例决策难权重化；迭代配方 future work
+### 4.6 后训练：验证增益可蒸馏（E3 两轮，R2 后升级为正式贡献候选 C5）
+| 轮 | 配方 | spatial |
+|---|---|---|
+| R1 | win4（1800 状态），无过滤 | 10.0%（≈基线，平价）|
+| R2 | win16（7203 状态）+ margin>p50 + std-p90 | **19.0%（=验证器在线增益全额）** |
+- 叙事：R1 平价 → "实例决策难权重化"是数据规模+选择质量问题；R2 破之 →
+  **蒸馏 = 验证的摊销**（部署零验证器开销：320ms/chunk vs 631ms/决策）
+- 组合臂（蒸馏+BoN 叠加）进行中：若再涨 → "验证-蒸馏交替迭代"配方成立（future work 硬骨）
 
 ## 5 Limitations（诚实清单）
 1. 增益限于分布内（C4 是双刃剑：诚实但限制适用域）
