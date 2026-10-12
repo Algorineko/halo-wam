@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "suite": "libero_goal",
+    "episodes": 10,
+    "workers": 2,
+    "policy": "haloact_v",
+    "ckpt": "checkpoints/act60k/best.pt",
+    "verifier": "checkpoints/e0v5/dyn_ens_k5_s2000.pt",
+    "n_cand": 5,
+    "reward_ckpt": "",
+    "lambda_u": 1.0,
+    "n_tasks": 0,
+    "task_ids": "",
+    "task_spec": "",
+    "seed": 0,
+    "wall_s": 3984.1,
+    "ts": "2026-10-12T21:30:23.771047"
+  },
+  "results": [
+    {
+      "task": "put_the_bowl_on_the_stove",
+      "episodes": 10,
+      "success": 4,
+      "rate": 0.4,
+      "avg_steps": 349.2,
+      "wall_s": 672.2
+    },
+    {
+      "task": "open_the_middle_drawer_of_the_cabinet",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 762.0
+    },
+    {
+      "task": "put_the_wine_bottle_on_top_of_the_cabinet",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 825.9
+    },
+    {
+      "task": "open_the_top_drawer_and_put_the_bowl_inside",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 882.6
+    },
+    {
+      "task": "put_the_bowl_on_top_of_the_cabinet",
+      "episodes": 10,
+      "success": 5,
+      "rate": 0.5,
+      "avg_steps": 306.2,
+      "wall_s": 609.5
+    },
+    {
+      "task": "push_the_plate_to_the_front_of_the_stove",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 925.1
+    },
+    {
+      "task": "turn_on_the_stove",
+      "episodes": 10,
+      "success": 8,
+      "rate": 0.8,
+      "avg_steps": 161.2,
+      "wall_s": 301.7
+    },
+    {
+      "task": "put_the_cream_cheese_in_the_bowl",
+      "episodes": 10,
+      "success": 2,
+      "rate": 0.2,
+      "avg_steps": 420.0,
+      "wall_s": 850.4
+    },
+    {
+      "task": "put_the_bowl_on_the_plate",
+      "episodes": 10,
+      "success": 3,
+      "rate": 0.3,
+      "avg_steps": 379.0,
+      "wall_s": 686.1
+    },
+    {
+      "task": "put_the_wine_bottle_on_the_rack",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 937.8
+    }
+  ],
+  "mean_rate": 0.22000000000000003
+}

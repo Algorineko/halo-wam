@@ -11,20 +11,27 @@
 ### 停机夜的意外收获：object 验证器臂其实跑完了
 23:05 停机 pkill 只杀了父进程，`python -c` 评测子进程存活并完成——
 eval_results/libero_object_haloact_v_20261003_235157.json（23:51 落盘）。
-其中 task 0/1 是 OOM 殉职（verifier GPU 加载期与 act60k 采集相撞），**其余 8 任务干净：
-4/80 = 5.0%**，对比 object 基线 7.0% → **object 上验证器初步无加成**（与 spatial +73%
-形成反差——诚实叙事又添一笔，待 10 任务干净数确认）。
+其中 task 0/1 是 OOM 殉职（verifier GPU 加载期与 act60k 采集相撞），补跑后
+**干净 10 任务 = 4.0%**，对比 object 基线 7.0% → **object 验证器负收益定论**（与
+spatial +73% 成反差——失败模态假说的核心证据）。
 
-### pipeline5b（2026-10-12 19:16 启动，PID 3836383，串行 ~2.5h）
-| 步 | 内容 |
-|---|---|
-| ① obj_ver 补 task 0,1 | 与 8 干净任务合并 → libero_object_haloact_v_MERGED10.json |
-| ② goal 基线 | 10 任务 × 10 eps |
-| ③ goal 验证器 | 同协议 |
-| ④ done 标记 | logs/pipeline5b.done |
+### ✅ 三 suite 主结果表（pipeline5b 2026-10-12 21:30 完成10-eps 协议）
+| suite | base | +verifier | 相对 | corr(base, per-task Δ) |
+|---|---|---|---|---|
+| **spatial** | 11.0% | **19.0%** | **+73%** | **+0.47**（增益集中中等基线任务：20→90 / 40→70）|
+| object | 7.0% | 4.0% | **−43%** | **−0.50**（伤害集中低基线任务：20→0 / 10→0 ×2）|
+| goal | 23.0% | 22.0% | −4%（平价）| −0.44（混合同suite内再分布，净零）|
+- 数据：spatial 083911/094707；object 225938/MERGED10；goal 202357/213023（eval_results/）
+- **失败模态假说第一轮判定：方向性成立**——增益需要"策略有时会做（base>0）+ 候选分歧
+  有判别力"（spatial 中段任务全吃增益）；低基线任务验证器主动选坏（object 三任务被清零）；
+  pooled corr ≈ 0 → 无普适单调律，**失败模态是 suite 级属性**（排布-认知 vs 抓取-能力 vs 长视野混合）
+- 诚实注记：per-task 10-eps 噪声 ±20pp 级（goal put_bowl_on_stove 70→40 属噪声带内），
+  suite 级聚合才是可靠单元
+- 延迟 microbench（latency_bench.json）：best-of-5 每决策 631ms（策略 320ms CPU +
+  打分 311ms GPU bf16），候选边际 ~7ms——vs 生成式 rollout 便宜两个数量级
 
-**队列**：三 suite 主表齐 → n-cand 敏感性（3/5/10）→ 打分延迟 microbench →
-分任务热力图 → E3 迭代蒸馏决策。
+**进行中**：n-cand 敏感性双卡并行（spatial n=3@卡0 / n=10@卡1，各 1 worker，~2h）
+**队列**：n-cand 出数 → E3-R2 蒸馏数据生成（×4 状态，卡1 夜间）→ 分任务热力图（写作期）
 
 ### 文献新鲜度复查（2026-10-12，用户提示触发）
 **无直接撞车**：frozen V-JEPA2 + action-contrast 动态头 + ensemble std 做 best-of-N
