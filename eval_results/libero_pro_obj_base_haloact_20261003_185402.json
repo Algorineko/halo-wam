@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "suite": "libero_pro_obj_base",
+    "episodes": 10,
+    "workers": 2,
+    "policy": "haloact",
+    "ckpt": "checkpoints/act60k/best.pt",
+    "verifier": "",
+    "n_cand": 5,
+    "reward_ckpt": "",
+    "lambda_u": 1.0,
+    "n_tasks": 0,
+    "task_ids": "",
+    "task_spec": "configs/libero_pro_spatial_object.json",
+    "seed": 0,
+    "wall_s": 3639.6,
+    "ts": "2026-10-03T18:54:02.972932"
+  },
+  "results": [
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 6,
+      "rate": 0.6,
+      "avg_steps": 249.2,
+      "wall_s": 415.4
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 5,
+      "rate": 0.5,
+      "avg_steps": 294.7,
+      "wall_s": 481.4
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 1,
+      "rate": 0.1,
+      "avg_steps": 461.0,
+      "wall_s": 735.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 812.5
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 8,
+      "rate": 0.8,
+      "avg_steps": 180.1,
+      "wall_s": 315.3
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 843.9
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 1,
+      "rate": 0.1,
+      "avg_steps": 458.2,
+      "wall_s": 779.9
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 830.6
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 788.5
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 711.5
+    }
+  ],
+  "mean_rate": 0.21000000000000002
+}

@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "suite": "libero_object",
+    "episodes": 10,
+    "workers": 2,
+    "policy": "haloact",
+    "ckpt": "checkpoints/act60k/best.pt",
+    "verifier": "",
+    "n_cand": 5,
+    "reward_ckpt": "",
+    "lambda_u": 1.0,
+    "n_tasks": 0,
+    "task_ids": "",
+    "task_spec": "",
+    "seed": 0,
+    "wall_s": 2730.8,
+    "ts": "2026-10-03T22:59:38.421101"
+  },
+  "results": [
+    {
+      "task": "pick_up_the_cream_cheese_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 2,
+      "rate": 0.2,
+      "avg_steps": 428.8,
+      "wall_s": 493.0
+    },
+    {
+      "task": "pick_up_the_alphabet_soup_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 548.2
+    },
+    {
+      "task": "pick_up_the_bbq_sauce_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 3,
+      "rate": 0.3,
+      "avg_steps": 387.2,
+      "wall_s": 412.6
+    },
+    {
+      "task": "pick_up_the_salad_dressing_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 1,
+      "rate": 0.1,
+      "avg_steps": 462.0,
+      "wall_s": 507.1
+    },
+    {
+      "task": "pick_up_the_ketchup_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 484.0
+    },
+    {
+      "task": "pick_up_the_tomato_sauce_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 593.6
+    },
+    {
+      "task": "pick_up_the_butter_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 513.3
+    },
+    {
+      "task": "pick_up_the_milk_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 593.7
+    },
+    {
+      "task": "pick_up_the_chocolate_pudding_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": 500.0,
+      "wall_s": 505.9
+    },
+    {
+      "task": "pick_up_the_orange_juice_and_place_it_in_the_basket",
+      "episodes": 10,
+      "success": 1,
+      "rate": 0.1,
+      "avg_steps": 464.5,
+      "wall_s": 497.4
+    }
+  ],
+  "mean_rate": 0.06999999999999999
+}

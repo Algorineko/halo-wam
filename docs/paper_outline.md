@@ -31,10 +31,20 @@
   C4 OOD 边界刻画（LIBERO-PRO swap/object 双轴）——验证器增益是分布内现象
 
 ## 2 Related Work
-- Test-time verification: CoVer (Stanford)、RoboMonkey（均重 rollout / 需训练）
-- Latent world models: V-JEPA 2-AC（停在规划）、DiWA（像素 WM）、PLaW-VLA（action-free 缺口=我们的 C1）
+- Test-time verification: CoVer (Stanford)、RoboMonkey（均重 rollout / 需训练）；
+  RoVer（视频奖励模型做 verifier + test-time SFT，重训练数据）；verifier-free
+  test-time sampling（VLA 自一致性免验证器——消融讨论位）；τ0-WM（WM 引导子任务
+  计划搜索，层级层而非动作块层）
+- Latent world models: V-JEPA 2-AC（停在规划）、DiWA（像素 WM）、PLaW-VLA（action-free 缺口=我们的 C1）；
+  **AtomVLA（最接近：预训练预测 WM 在隐空间给候选动作块打分——但它把 WM 烘进策略预训练，
+  我们是 policy-agnostic 后挂 + 不确定性而非奖励打分，必须正面对比引用）**
+- WM 自检/幻觉: WAV（forward-inverse 不对称自改进验证）、RWM-U（自回归 WM 认知不确定性轨迹预测）、
+  "Can We Detect Failures Without Failure Data?"（2025-06，不确定性失败检测——只做检测不做动作选择，我们补上 best-of-N 增益）
 - WM 后训练: WMPO / HaWMPO（reward hacking 案例=我们动机）
-- 基准: LIBERO 饱和 → LIBERO-PRO（我们的 OOD 轴）
+- 基准: LIBERO 饱和 → LIBERO-PRO（我们的 OOD 轴）；World Models for Robotic Manipulation Survey（2026-05，related work 框架）
+- **2026-10-12 复查结论：无直接撞车（frozen V-JEPA2 + action-contrast 动态头 + ensemble std
+  做 best-of-N + 分布内边界刻画仍空缺），但赛道升温 → 引言动机更强、区分度段落要硬**
+  （待精读：RoVer / AtomVLA / Can-We-Detect-Failures 三篇）
 
 ## 3 Method
 - 3.1 固定窗口相对编码协议（V-JEPA 2 无绝对位置嵌入；同内容跨上下文 cos≈0.55 的伪影分析）

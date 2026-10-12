@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "suite": "libero_spatial",
+    "episodes": 10,
+    "workers": 2,
+    "policy": "haloact",
+    "ckpt": "checkpoints/act_e3/best.pt",
+    "verifier": "",
+    "n_cand": 5,
+    "reward_ckpt": "",
+    "lambda_u": 1.0,
+    "n_tasks": 0,
+    "task_ids": "",
+    "task_spec": "",
+    "seed": 0,
+    "wall_s": 30.0,
+    "ts": "2026-10-03T20:40:13.916954"
+  },
+  "results": [
+    {
+      "task": "task0",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    },
+    {
+      "task": "task1",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    },
+    {
+      "task": "task2",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    },
+    {
+      "task": "task3",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    },
+    {
+      "task": "task4",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    },
+    {
+      "task": "task5",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    },
+    {
+      "task": "task6",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    },
+    {
+      "task": "task7",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    },
+    {
+      "task": "task8",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    },
+    {
+      "task": "task9",
+      "episodes": 10,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": "ate_dict\n    raise RuntimeError('Error(s) in loading state_dict for {}:\\n\\t{}'.format(\nRuntimeError: Error(s) in loading state_dict for HaloACT:\n\tsize mismatch for task_emb.weight: copying a param with shape torch.Size([130, 256]) from checkpoint, the shape in current model is torch.Size([10, 256])."
+    }
+  ],
+  "mean_rate": 0.0
+}

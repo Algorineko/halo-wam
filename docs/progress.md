@@ -2,23 +2,52 @@
 
 > 本文件是活文档：每个 cron tick / 工作会话后更新。计划见 [plan.md](plan.md)。
 
-## 当前状态（更新于 2026-10-03 23:10）——⏸️ 已让路停机，算力全释放
+## 当前状态（更新于 2026-10-12 19:25）——▶️ 恢复推进（用户指示）
+
+> **2026-10-12 19:10 用户指示恢复推进**。机器 8 天空置（无进程、cgroup 5.5GB、
+> 双卡空闲），环境零重建直接续跑。cron 已重建（看门狗 13,43 * * * * = 1152f6b5、
+> 日检 09:17 = 530f3bae，**7 天后自动过期需重建**）。
+
+### 停机夜的意外收获：object 验证器臂其实跑完了
+23:05 停机 pkill 只杀了父进程，`python -c` 评测子进程存活并完成——
+eval_results/libero_object_haloact_v_20261003_235157.json（23:51 落盘）。
+其中 task 0/1 是 OOM 殉职（verifier GPU 加载期与 act60k 采集相撞），**其余 8 任务干净：
+4/80 = 5.0%**，对比 object 基线 7.0% → **object 上验证器初步无加成**（与 spatial +73%
+形成反差——诚实叙事又添一笔，待 10 任务干净数确认）。
+
+### pipeline5b（2026-10-12 19:16 启动，PID 3836383，串行 ~2.5h）
+| 步 | 内容 |
+|---|---|
+| ① obj_ver 补 task 0,1 | 与 8 干净任务合并 → libero_object_haloact_v_MERGED10.json |
+| ② goal 基线 | 10 任务 × 10 eps |
+| ③ goal 验证器 | 同协议 |
+| ④ done 标记 | logs/pipeline5b.done |
+
+**队列**：三 suite 主表齐 → n-cand 敏感性（3/5/10）→ 打分延迟 microbench →
+分任务热力图 → E3 迭代蒸馏决策。
+
+### 文献新鲜度复查（2026-10-12，用户提示触发）
+**无直接撞车**：frozen V-JEPA2 + action-contrast 动态头 + ensemble std 做 best-of-N
++ 分布内边界刻画仍空缺。但赛道升温，新增 6 个需引用/区分的竞品（详见
+paper_outline.md §2）：AtomVLA（最接近，WM 烘进预训练 vs 我们 policy-agnostic 后挂）、
+RoVer（视频奖励 verifier）、verifier-free test-time sampling、τ0-WM、WAV、
+"Can We Detect Failures Without Failure Data?"（2025-06 检测不做选择）。**待精读：
+RoVer / AtomVLA / Can-We-Detect 三篇**。
+
+---
+
+## ⏸️ 历史状态（2026-10-03 23:10）——让路停机归档
 
 > **2026-10-03 23:05 用户指示：此工作给其他项目让步。** 已停止全部算力占用：
 > 双卡 0%（hy-smi 确认）、cgroup 8.1GB（系统基线）、双 cronjob（自监督 4c6cba61 /
-> 看门狗 d5ebafd1）已删除、所有 halo-wam 进程清零。**恢复时无需重建环境**：
-> `bash scripts/pipeline_stage5.sh` 重跑即续（data 已在盘，脚本幂等）。
+> 看门狗 d5ebafd1）已删除、所有 halo-wam 进程清零。
 
 ### 停机时点的 multi-suite 进度（pipeline5）
 | 臂 | 状态 |
 |---|---|
 | libero_object 基线 | ✅ **7.0%**（eval_results/libero_object_haloact_20261003_225938.json）|
-| libero_object 验证器 | ⏸️ 运行中被停（约 60/70min，无结果）|
+| libero_object 验证器 | ✅ 晚到完整结果（见上"意外收获"，task 0/1 需补）|
 | libero_goal 基线 / 验证器 | 未开始 |
-
-**恢复后的首批动作**：① 重跑 pipeline5 剩余三臂（~3.5h）→ 三 suite 主结果表齐
-② E3 迭代式蒸馏决策（×4 状态 + 高边际过滤 + 2-3 轮）③ n-cand 敏感性 +
-打分延迟 microbench（paper_outline.md 写作前置清单）
 
 ### 战线快照（同下表，四条战线已闭环）
 
