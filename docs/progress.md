@@ -17,6 +17,11 @@
 - **Eq.(1) 是论文写错非代码错**（代码 cos 对真未来 latent，合法）——改公式即可
 - **LIBERO 每任务恰 50 init states** → 50-eps 打满 + 跨臂天然配对（McNemar 功效）
 
+### Phase 1 收数（2026-10-14 晨起滚动更新）
+- **obj_v50（object BoN-5, 50-eps）= 4.8%**（10-eps 时 4.0%，负收益方向大样本稳定）；
+  待 obj_base50 配对（CPU 流跑中）——审稿 II.1 的Powered 重跑首格
+- 流水：GPU 臂 spatial 8/10 / object ✅；CPU 双流 sp_base/obj_base 各 ~5/10
+
 ### 跑中（pipeline10，双卡各 1w 串行队列，~22GB）
 - 卡0：sp_v50 → goal_v50 →（pipeline10b 接续）λ0.25/0.5/1.0/reward-only
 - 卡1：obj_v50 → r2_bon50 → r3_bon50 → rand50
