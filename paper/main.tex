@@ -13,7 +13,7 @@
 \newcommand{\std}{\sigma_{\mathrm{ens}}}
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 
-\title{\textbf{HALO: Calibration-Free Latent World-Model Verification for VLA Policies\\ --- and When It Helps}}
+\title{\textbf{Latent Ensemble Disagreement as a Test-Time Verifier for Robot Policies:\\ A Powered Study of When It Helps}}
 \author{Anonymous}
 \date{October 2026 (draft for RSS 2027)}
 
@@ -21,15 +21,15 @@
 \maketitle
 
 \begin{abstract}
-Vision-language-action (VLA) policies fail silently: at deployment there is no cheap signal that tells whether the next action chunk is about to work. Test-time verification with world models is an active answer, but existing verifiers either require trained reward models, goal references, or calibration data, and none characterizes \emph{when} verification helps. We present HALO, a calibration-free verifier composed of a frozen V-JEPA~2 encoder, a lightweight action-conditioned dynamics head trained with an action-contrast loss, and a deep-ensemble epistemic standard deviation used directly as the best-of-$N$ selection score. On LIBERO, HALO lifts an 8.1M-parameter policy from 11.0\% to 19.0\% success on spatial rearrangement ($+73\%$ relative) at 0.31\,s marginal verifier cost per decision---far below generative world-model rollout. We then map the boundary of this gain: verification helps in an \emph{epistemic failure regime} (tasks the policy sometimes solves), actively hurts in a \emph{capability failure regime} ($7\%\!\to\!4\%$ on object manipulation), and vanishes out of distribution. A three-generation reward-head ablation shows the uncertainty signal, not a learned reward, carries the online gain. Finally, the verification gain can be \emph{amortized in one shot}---distilling best-of-5 decisions into weights recovers the full 19\% with zero deployment-time verifier cost---but iterating the loop collapses ($8\%$), establishing distillation as a one-shot amortization rather than an iterative amplifier. Together these results give both a practical, cheap verifier and a falsifiable account of when latent-uncertainty verification can be trusted.
+Imitation-trained robot policies---including the vision-language-action (VLA) family---fail silently: at deployment there is no cheap signal that tells whether the next action chunk is about to work. Test-time verification with world models is an active answer, but existing verifiers either require trained reward models, goal references, or calibration data, and none characterizes \emph{when} verification helps. We present $\sigma$-select, a calibration-free verifier composed of a frozen V-JEPA~2 encoder, a lightweight action-conditioned dynamics head trained with an action-contrast loss, and a deep-ensemble epistemic standard deviation used directly as the best-of-$N$ selection score. On LIBERO, $\sigma$-select lifts an 8.1M-parameter policy from 11.0\% to 19.0\% success on spatial rearrangement ($+73\%$ relative) at 0.31\,s marginal verifier cost per decision---far below generative world-model rollout. We then map the boundary of this gain: verification helps in an \emph{epistemic failure regime} (tasks the policy sometimes solves), actively hurts in a \emph{capability failure regime} ($7\%\!\to\!4\%$ on object manipulation), and vanishes out of distribution. A three-generation reward-head ablation shows the uncertainty signal, not a learned reward, carries the online gain. Finally, the verification gain can be \emph{amortized in one shot}---distilling best-of-5 decisions into weights recovers the full 19\% with zero deployment-time verifier cost---but iterating the loop collapses ($8\%$), establishing distillation as a one-shot amortization rather than an iterative amplifier. Together these results give both a practical, cheap verifier and a falsifiable account of when latent-uncertainty verification can be trusted.
 \end{abstract}
 
 \section{Introduction}
 VLA policies inherit the failure modes of their supervision: they execute confidently even when the current action chunk leads away from the goal. A growing line of work therefore verifies candidate actions at test time. Yet the proposed verifiers are heavy or conditional: generative rollouts are expensive; learned process rewards require reward training data~\citep{rover2025}; goal-referenced latent scoring is embedded in a bespoke post-training pipeline~\citep{atomvla2026}; and conformally calibrated consequence models require calibration sets~\citep{checkvla2026}. Meanwhile, world-model-based post-training has documented its own failure signature: rewards hallucinated by imperfect world models are exploited by the policy~\citep{hawmpo2026}, and verifiers can be overconfident out of distribution.
 
-This paper asks two questions. \textbf{(Q1)} Can a \emph{calibration-free}, \emph{goal-free}, policy-agnostic verifier---one that needs no reward data, no goal specification, and no statistical calibration set---improve a VLA policy at test time? \textbf{(Q2)} If so, \emph{when} does the improvement exist, and can it be moved into the weights?
+This paper asks two questions. \textbf{(Q1)} Can a \emph{calibration-free}, \emph{goal-free}, policy-agnostic verifier---one that needs no reward data, no goal specification, and no statistical calibration set---improve an imitation-trained robot policy at test time? \textbf{(Q2)} If so, \emph{when} does the improvement exist, and can it be moved into the weights?
 
-\textbf{HALO} (\underline{H}allucination-\underline{A}ware \underline{L}atent w\underline{O}rld model) answers Q1 affirmatively where its predecessors do not apply. On a frozen V-JEPA~2 encoder we train a 6-layer transformer dynamics head with an \emph{action-contrast loss} (the frozen encoder alone is nearly action-insensitive; Sec.~\ref{sec:method}); a $K{=}5$ deep ensemble turns prediction disagreement into a per-candidate epistemic score $\std$, and best-of-$N$ selects $\arg\min \std$. The verifier adds a marginal 0.31\,s per decision on a DCU (87\% of it the dynamics-head forward itself; the policy chunk it scores costs 0.32\,s on CPU and is paid in the base condition too), against seconds-per-step generative rollouts.
+\textbf{$\sigma$-select} (\underline{H}allucination-\underline{A}ware \underline{L}atent w\underline{O}rld model) answers Q1 affirmatively where its predecessors do not apply. On a frozen V-JEPA~2 encoder we train a 6-layer transformer dynamics head with an \emph{action-contrast loss} (the frozen encoder alone is nearly action-insensitive; Sec.~\ref{sec:method}); a $K{=}5$ deep ensemble turns prediction disagreement into a per-candidate epistemic score $\std$, and best-of-$N$ selects $\arg\min \std$. The verifier adds a marginal 0.31\,s per decision on a DCU (87\% of it the dynamics-head forward itself; the policy chunk it scores costs 0.32\,s on CPU and is paid in the base condition too), against seconds-per-step generative rollouts.
 
 Our contributions:
 \begin{enumerate}
@@ -43,11 +43,11 @@ Our contributions:
 We release all checkpoints, evaluation logs, and per-task results to make the negative cells as reusable as the positive ones.
 
 \section{Related Work}
-\textbf{Test-time verification for VLA.} CoVer/CoVer-VLA~\citep{cover2026} scale a trained verifier against sampled actions and show verification scales better than data; RoboMonkey~\citep{robomonkey2025} scales sampling-and-verification; RoVer~\citep{rover2025} trains a process reward model that also emits action-refinement directions; MG-Select~\citep{mgselect2025} removes the verifier via self-consistency. CheckVLA~\citep{checkvla2026} verifies execution with a frozen action-conditioned world model under \emph{conformal calibration}, reporting $36.1\%$ vs $27.6\%$ on RoboCasa365 mobile manipulation. HALO differs in the scoring signal (ensemble epistemic std; no reward model, no calibration set, no goal reference) and, crucially, in the object of study: we characterize \emph{when} the signal helps and when it backfires.
+\textbf{Test-time verification for VLA.} CoVer/CoVer-VLA~\citep{cover2026} scale a trained verifier against sampled actions and show verification scales better than data; RoboMonkey~\citep{robomonkey2025} scales sampling-and-verification; RoVer~\citep{rover2025} trains a process reward model that also emits action-refinement directions; MG-Select~\citep{mgselect2025} removes the verifier via self-consistency. CheckVLA~\citep{checkvla2026} verifies execution with a frozen action-conditioned world model under \emph{conformal calibration}, reporting $36.1\%$ vs $27.6\%$ on RoboCasa365 mobile manipulation. $\sigma$-select differs in the scoring signal (ensemble epistemic std; no reward model, no calibration set, no goal reference) and, crucially, in the object of study: we characterize \emph{when} the signal helps and when it backfires.
 
-\textbf{Latent world models for control.} V-JEPA~2-AC~\citep{vjepa2_2025} post-trains an action-conditioned predictor for MPC planning; PLaW-VLA~\citep{plawvla2025} couples a predictive latent world model with VLA action generation; DiWA~\citep{diwa2025} uses small pixel-space world models. AtomVLA~\citep{atomvla2026} scores candidate chunks against \emph{subtask goals} with a pretrained latent world model inside a bespoke post-training pipeline. HALO's head is a tiny post-hoc attachment to a frozen encoder, and its score is uncertainty rather than goal distance.
+\textbf{Latent world models for control.} V-JEPA~2-AC~\citep{vjepa2_2025} post-trains an action-conditioned predictor for MPC planning; PLaW-VLA~\citep{plawvla2025} couples a predictive latent world model with VLA action generation; DiWA~\citep{diwa2025} uses small pixel-space world models. AtomVLA~\citep{atomvla2026} scores candidate chunks against \emph{subtask goals} with a pretrained latent world model inside a bespoke post-training pipeline. $\sigma$-select's head is a tiny post-hoc attachment to a frozen encoder, and its score is uncertainty rather than goal distance.
 
-\textbf{Uncertainty for runtime monitoring.} FAIL-Detect~\citep{faildetect2025} distills policy signals into calibrated failure alarms via conformal prediction: uncertainty as a \emph{passive alarm}. HALO consumes the same family of signals \emph{constructively} (action selection) and measures success-rate gains; our failure-mode hypothesis doubles as an applicability warning for uncertainty-based detectors.
+\textbf{Uncertainty for runtime monitoring.} FAIL-Detect~\citep{faildetect2025} distills policy signals into calibrated failure alarms via conformal prediction: uncertainty as a \emph{passive alarm}. $\sigma$-select consumes the same family of signals \emph{constructively} (action selection) and measures success-rate gains; our failure-mode hypothesis doubles as an applicability warning for uncertainty-based detectors.
 
 \textbf{WM-based post-training.} WMPO/HaWMPO~\citep{hawmpo2026} document reward hacking from imperfect world models in RL post-training; AtomVLA feeds world-model scores to GRPO. Our C5 shows the SFT-distillation route absorbs the verifier gain in one shot and then \emph{degrades}---a boundary for this family.
 
@@ -99,7 +99,7 @@ HaloACT-D (frozen DINOv2) & 24M & 0.038 & 0\% \\
 \centering\small
 \begin{tabular}{lcccc}
 \toprule
-suite & base & +BoN-5 (HALO) & $\Delta$rel & corr(base, per-task $\Delta$) \\
+suite & base & +BoN-5 ($\sigma$-select) & $\Delta$rel & corr(base, per-task $\Delta$) \\
 \midrule
 LIBERO-spatial & 11.0\% & \textbf{19.0\%} & \textbf{+73\%} & $+0.47$ \\
 LIBERO-object & 7.0\% & 4.0\% & $-43\%$ & $-0.50$ \\
@@ -189,7 +189,7 @@ Latency (BW1000 DCU, bf16): one best-of-5 decision costs 0.63\,s = policy chunk 
 arm (spatial) & success \\
 \midrule
 base (act60k) & 11.0\% \\
-+ BoN-5 (HALO online) & 19.0\% \\
++ BoN-5 ($\sigma$-select online) & 19.0\% \\
 distilled R1 (1.8k states, unfiltered) & 10.0\% (parity) \\
 distilled R2 (7.2k states, margin$>$p50) & \textbf{19.0\%} (full absorption) \\
 R2 + BoN-5 (stacked) & \textbf{22.0\%} (2$\times$ base) \\
