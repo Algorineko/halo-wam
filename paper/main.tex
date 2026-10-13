@@ -25,7 +25,7 @@ Vision-language-action (VLA) policies fail silently: at deployment there is no c
 \end{abstract}
 
 \section{Introduction}
-VLA policies inherit the failure modes of their supervision: they execute confidently even when the current action chunk leads away from the goal. A growing line of work therefore verifies candidate actions at test time. Yet the proposed verifiers are heavy or conditional: generative rollouts are expensive; learned process rewards require reward training data~\citep{rover2025}; goal-referenced latent scoring is embedded in a bespoke post-training pipeline~\citep{atomvla2026}; and conformally calibrated consequence models require calibration sets~\citep{checkvla2026}. Meanwhile, world-model-based post-training has documented its own failure signature: rewards hallucinated by imperfect world models are exploited by the policy~\citep{hawmpo2025}, and verifiers can be overconfident out of distribution.
+VLA policies inherit the failure modes of their supervision: they execute confidently even when the current action chunk leads away from the goal. A growing line of work therefore verifies candidate actions at test time. Yet the proposed verifiers are heavy or conditional: generative rollouts are expensive; learned process rewards require reward training data~\citep{rover2025}; goal-referenced latent scoring is embedded in a bespoke post-training pipeline~\citep{atomvla2026}; and conformally calibrated consequence models require calibration sets~\citep{checkvla2026}. Meanwhile, world-model-based post-training has documented its own failure signature: rewards hallucinated by imperfect world models are exploited by the policy~\citep{hawmpo2026}, and verifiers can be overconfident out of distribution.
 
 This paper asks two questions. \textbf{(Q1)} Can a \emph{calibration-free}, \emph{goal-free}, policy-agnostic verifier---one that needs no reward data, no goal specification, and no statistical calibration set---improve a VLA policy at test time? \textbf{(Q2)} If so, \emph{when} does the improvement exist, and can it be moved into the weights?
 
@@ -45,11 +45,11 @@ We release all checkpoints, evaluation logs, and per-task results to make the ne
 \section{Related Work}
 \textbf{Test-time verification for VLA.} CoVer/CoVer-VLA~\citep{cover2026} scale a trained verifier against sampled actions and show verification scales better than data; RoboMonkey~\citep{robomonkey2025} scales sampling-and-verification; RoVer~\citep{rover2025} trains a process reward model that also emits action-refinement directions; MG-Select~\citep{mgselect2025} removes the verifier via self-consistency. CheckVLA~\citep{checkvla2026} verifies execution with a frozen action-conditioned world model under \emph{conformal calibration}, reporting $36.1\%$ vs $27.6\%$ on RoboCasa365 mobile manipulation. HALO differs in the scoring signal (ensemble epistemic std; no reward model, no calibration set, no goal reference) and, crucially, in the object of study: we characterize \emph{when} the signal helps and when it backfires.
 
-\textbf{Latent world models for control.} V-JEPA~2-AC~\citep{vjepa2_2025} post-trains an action-conditioned predictor for MPC planning; PLaW-VLA~\citep{plawvla2025} couples a latent world model with a VLA but the world model is action-free; DiWA~\citep{diwa2025} uses small pixel-space world models. AtomVLA~\citep{atomvla2026} scores candidate chunks against \emph{subtask goals} with a pretrained latent world model inside a bespoke post-training pipeline. HALO's head is a tiny post-hoc attachment to a frozen encoder, and its score is uncertainty rather than goal distance.
+\textbf{Latent world models for control.} V-JEPA~2-AC~\citep{vjepa2_2025} post-trains an action-conditioned predictor for MPC planning; PLaW-VLA~\citep{plawvla2025} couples a predictive latent world model with VLA action generation; DiWA~\citep{diwa2025} uses small pixel-space world models. AtomVLA~\citep{atomvla2026} scores candidate chunks against \emph{subtask goals} with a pretrained latent world model inside a bespoke post-training pipeline. HALO's head is a tiny post-hoc attachment to a frozen encoder, and its score is uncertainty rather than goal distance.
 
 \textbf{Uncertainty for runtime monitoring.} FAIL-Detect~\citep{faildetect2025} distills policy signals into calibrated failure alarms via conformal prediction: uncertainty as a \emph{passive alarm}. HALO consumes the same family of signals \emph{constructively} (action selection) and measures success-rate gains; our failure-mode hypothesis doubles as an applicability warning for uncertainty-based detectors.
 
-\textbf{WM-based post-training.} WMPO/HaWMPO~\citep{hawmpo2025} document reward hacking from imperfect world models in RL post-training; AtomVLA feeds world-model scores to GRPO. Our C5 shows the SFT-distillation route absorbs the verifier gain in one shot and then \emph{degrades}---a boundary for this family.
+\textbf{WM-based post-training.} WMPO/HaWMPO~\citep{hawmpo2026} document reward hacking from imperfect world models in RL post-training; AtomVLA feeds world-model scores to GRPO. Our C5 shows the SFT-distillation route absorbs the verifier gain in one shot and then \emph{degrades}---a boundary for this family.
 
 \textbf{Benchmarks.} LIBERO~\citep{libero2023} is saturated for large policies; LIBERO-PRO~\citep{liberopro2025} exposes brittleness of large VLA models to perturbations. We use small policies deliberately: verification effects must be measurable away from ceiling, and low-success regimes are where the boundary phenomena live.
 
@@ -208,20 +208,6 @@ random-pick among 5 candidates (base policy) & 15.0\% \\
 \section{Conclusion}
 A calibration-free, goal-free latent world-model verifier made of a frozen encoder, a contrast-trained dynamics head, and ensemble disagreement delivers $+73\%$ relative success on spatial rearrangement at two orders of magnitude below generative-rollout cost, absorbs fully into weights in one distillation shot, and---equally important---fails in principled, predictable places. The failure-mode hypothesis converts those failures from caveats into a testable account of when latent uncertainty can be trusted at robot decision time.
 
-\begin{thebibliography}{20}
-\bibitem[CoVer (2026)]{cover2026} J. Kwok et al. CoVer-VLA: Scaling verification can be more effective than scaling data. \emph{ECCV}, 2026.
-\bibitem[RoboMonkey (2025)]{robomonkey2025} J. Kwok et al. RoboMonkey: Scaling test-time sampling and verification for VLAs. arXiv:2506.17811, 2025.
-\bibitem[RoVer (2025)]{rover2025} Dai et al. RoVer: Robot reward model as test-time verifier for VLA models. arXiv:2510.10975, 2025.
-\bibitem[MG-Select (2025)]{mgselect2025} S. Jang et al. Verifier-free test-time sampling for vision-language-action models. 2025.
-\bibitem[CheckVLA (2026)]{checkvla2026} Y. Liu et al. CheckVLA: Execution-time verification with action-conditioned world models. arXiv, Oct 2026.
-\bibitem[AtomVLA (2026)]{atomvla2026} Sun et al. AtomVLA: Scalable post-training for robotic manipulation via predictive latent world models. arXiv:2603.08519, 2026.
-\bibitem[V-JEPA 2 (2025)]{vjepa2_2025} A. Bardes et al. V-JEPA 2: Self-supervised video models enable understanding, prediction and planning. arXiv:2506.09985, 2025.
-\bibitem[PLaW-VLA (2025)]{plawvla2025} PLaW-VLA: Physics-aware latent world model for VLA policy learning. 2025.
-\bibitem[DiWA (2025)]{diwa2025} DiWA: World model-distilled skills for robotic manipulation. \emph{CoRL}, 2025.
-\bibitem[HaWMPO (2025)]{hawmpo2025} Hallucinating world-model post-training: reward hacking in WM-based robot RL. 2025.
-\bibitem[FAIL-Detect (2025)]{faildetect2025} C. Xu et al. Can we detect failures without failure data? Uncertainty-aware runtime failure detection for imitation learning policies. arXiv:2503.08558, 2025.
-\bibitem[LIBERO (2023)]{libero2023} B. Liu et al. LIBERO: Benchmarking knowledge transfer for lifelong robot learning. \emph{NeurIPS}, 2023.
-\bibitem[LIBERO-PRO (2025)]{liberopro2025} LIBERO-PRO: Towards robust and honest evaluation of VLA models. arXiv:2510.03827, 2025.
-\end{thebibliography}
+\bibliography{refs}
 
 \end{document}
