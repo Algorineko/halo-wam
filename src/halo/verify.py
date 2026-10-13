@@ -41,3 +41,21 @@ class UncertaintyScorer:
         with torch.autocast("cuda", dtype=torch.bfloat16):
             std = self.ens.epistemic_std(ctx_tok, acts)    # (N, Nf)
         return std.mean(dim=-1)
+
+    @torch.no_grad()
+    def score_multi(self, obs_frame: torch.Tensor, action_chunks: torch.Tensor):
+        """同 score，但额外返回 K=3 子集的 σ（K 消融离线重打分用）。
+
+        返回 (σ_K5, σ_K3)，各 (N,)，越低越可信。
+        """
+        f = obs_frame.to(self.device)
+        if f.dim() == 3:
+            f = f.unsqueeze(0)
+        ctx_lat = self.enc.encode(f)
+        ctx_tok = ctx_lat.reshape(1, -1, 1024).expand(action_chunks.shape[0], -1, -1)
+        acts = action_chunks.to(self.device).to(ctx_tok.dtype)
+        with torch.autocast("cuda", dtype=torch.bfloat16):
+            preds = self.ens(ctx_tok, acts)                # (K,N,Nf,D)
+        std5 = preds.std(dim=0).mean(dim=-1).mean(dim=-1)
+        std3 = preds[:3].std(dim=0).mean(dim=-1).mean(dim=-1)
+        return std5.float(), std3.float()

@@ -53,7 +53,7 @@ def run_one_task(args):
 
     pol = None
     verifier_scorer = None
-    if policy in ("haloact", "haloact_v", "haloact_h", "haloact_r"):
+    if policy in ("haloact", "haloact_v", "haloact_h", "haloact_r", "haloact_c"):
         import sys
 
         sys.path.insert(0, "/home/tione/notebook/home/arianliu/project/halo-wam/src")
@@ -106,6 +106,8 @@ def run_one_task(args):
     successes, steps_total = 0, 0
     rng = np.random.RandomState(seed)
     t0 = time.time()
+    ep_success = []  # 逐 episode 成功指示（配对检验用，跨臂同 init_states[ep]）
+    dec_log = {"cands": [], "sig5": [], "sig3": [], "rew": [], "chosen": [], "ep": []}
     for ep in range(n_episodes):
         obs = env.reset()
         env.set_init_state(init_states[ep])
@@ -129,7 +131,7 @@ def run_one_task(args):
                             chunk = pol(a1, a2, st, tid)[0] + noise.reshape(pol.chunk, 7)
                             cands.append(chunk.clamp(-1, 1))  # (13,7)
                         cand_acts = torch.stack(cands)
-                        stds = verifier_scorer.score(
+                        stds, stds3 = verifier_scorer.score_multi(
                             torch.from_numpy(obs["agentview_image"]), cand_acts.float()
                         )
                         if reward_head is not None:
@@ -144,8 +146,45 @@ def run_one_task(args):
                                 rewards = reward_head(ctx_tok.float(), fut_tok, rtid)
                             scores = rewards - float(lambda_u) * stds  # 完整 HALO 打分
                         else:
+                            rewards = None
                             scores = stds
-                        best = int(rng.randint(cand_acts.shape[0])) if policy == "haloact_r" else int(scores.argmin())
+                        if policy == "haloact_r":
+                            best = int(rng.randint(cand_acts.shape[0]))
+                        else:
+                            best = int(scores.argmin())
+                        # 决策级日志（K 消融/consensus 重放/σ 判别力离线分析）
+                        dec_log["cands"].append(cand_acts.numpy().astype(np.float16))
+                        dec_log["sig5"].append(stds.detach().cpu().numpy().astype(np.float32))
+                        dec_log["sig3"].append(stds3.detach().cpu().numpy().astype(np.float32))
+                        dec_log["rew"].append(rewards.cpu().numpy() if rewards is not None
+                                              else np.full(n_cand, np.nan, np.float32))
+                        dec_log["chosen"].append(best)
+                        dec_log["ep"].append(ep)
+                    act_queue = cands[best].tolist()
+                action = np.array(act_queue.pop(0))[: env.env.action_dim]
+                obs, _, done, _ = env.step(action)
+                step += 1
+                continue
+            elif policy == "haloact_c":
+                # MG-Select 式免验证器基线：候选共识（medoid）选择，纯 CPU
+                if not act_queue:
+                    state = np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
+                    tid = torch.tensor([vocab[task.name]])
+                    with torch.inference_mode():
+                        cands = []
+                        for _ in range(n_cand):
+                            noise = torch.randn(pol.chunk * 7) * 0.02
+                            a1 = torch.from_numpy(obs["agentview_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                            a2 = torch.from_numpy(obs["robot0_eye_in_hand_image"]).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+                            st = torch.from_numpy(state).float().unsqueeze(0)
+                            chunk = pol(a1, a2, st, tid)[0] + noise.reshape(pol.chunk, 7)
+                            cands.append(chunk.clamp(-1, 1))
+                        cand_acts = torch.stack(cands)
+                        d = torch.cdist(cand_acts.flatten(1), cand_acts.flatten(1))
+                        best = int(d.mean(dim=1).argmin())  # medoid：到其余候选平均距离最小
+                        dec_log["cands"].append(cand_acts.numpy().astype(np.float16))
+                        dec_log["chosen"].append(best)
+                        dec_log["ep"].append(ep)
                     act_queue = cands[best].tolist()
                 action = np.array(act_queue.pop(0))[: env.env.action_dim]
                 obs, _, done, _ = env.step(action)
@@ -206,9 +245,22 @@ def run_one_task(args):
             obs, _, done, _ = env.step(action)
             step += 1
         successes += int(env.check_success())
+        ep_success.append(int(env.check_success()))
         steps_total += step
     env.close()
     dt = time.time() - t0
+    if dump_dir and dec_log["chosen"]:
+        os.makedirs(task_dir, exist_ok=True)
+        np.savez_compressed(
+            os.path.join(task_dir, f"task{task_idx:02d}.npz"),
+            cands=np.stack(dec_log["cands"]) if dec_log["cands"] else np.zeros(0),
+            sig5=np.stack(dec_log["sig5"]) if dec_log["sig5"] else np.zeros(0),
+            sig3=np.stack(dec_log["sig3"]) if dec_log["sig3"] else np.zeros(0),
+            rew=np.stack(dec_log["rew"]) if dec_log["rew"] else np.zeros(0),
+            chosen=np.array(dec_log["chosen"], np.int16),
+            ep=np.array(dec_log["ep"], np.int16),
+            ep_success=np.array(ep_success, np.int8),
+        )
     return {
         "task": task.name,
         "episodes": n_episodes,
@@ -216,6 +268,7 @@ def run_one_task(args):
         "rate": successes / max(n_episodes, 1),
         "avg_steps": steps_total / max(n_episodes, 1),
         "wall_s": round(dt, 1),
+        "ep_success": ep_success,
     }
 
 
@@ -224,7 +277,7 @@ def main():
     p.add_argument("--suite", type=str, default="libero_spatial")
     p.add_argument("--episodes", type=int, default=5)
     p.add_argument("--workers", type=int, default=32)
-    p.add_argument("--policy", type=str, default="random", choices=["random", "haloact", "haloact_v", "haloact_h", "haloact_d", "haloact_r"])
+    p.add_argument("--policy", type=str, default="random", choices=["random", "haloact", "haloact_v", "haloact_h", "haloact_d", "haloact_r", "haloact_c"])
     p.add_argument("--ckpt", type=str, default="", help="smolvla checkpoint 目录")
     p.add_argument("--verifier", type=str, default="", help="E0 动态头 checkpoint（smolvla_v 用）")
     p.add_argument("--n-cand", type=int, default=5, help="best-of-N 候选数")
@@ -233,15 +286,25 @@ def main():
     p.add_argument("--n-tasks", type=int, default=0, help="0=全部任务")
     p.add_argument("--task-ids", type=str, default="", help="逗号分隔任务号子集（suite 模式，断点补跑用）")
     p.add_argument("--task-spec", type=str, default="", help="LIBERO-PRO 直通 JSON：[{name,bddl,init}]（--suite 仅作结果标签）")
+    p.add_argument("--log-decisions", action="store_true", help="落盘逐决策日志 npz（候选/σ_K5/σ_K3/选中，机制分析用）")
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args()
+
+    dec_root = ""
+    if args.log_decisions:
+        from datetime import datetime as _dt
+
+        dec_root = os.path.join(_RESULT_DIR, "decisions",
+                                f"{args.suite}_{args.policy}_{_dt.now():%Y%m%d_%H%M%S}")
+        os.makedirs(dec_root, exist_ok=True)
+        print(f"[eval] decisions -> {dec_root}")
 
     if args.task_spec:
         with open(args.task_spec) as f:
             specs = json.load(f)
         n_run = args.n_tasks or len(specs)
         jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier,
-                 args.n_cand, "", args.reward_ckpt, args.lambda_u, specs[i]) for i in range(n_run)]
+                 args.n_cand, dec_root, args.reward_ckpt, args.lambda_u, specs[i]) for i in range(n_run)]
         print(f"[eval] {args.suite} (task-spec): {n_run} tasks × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
     else:
         from libero.libero import benchmark
@@ -250,7 +313,7 @@ def main():
         n_tasks = suite.get_num_tasks()
         ids = [int(x) for x in args.task_ids.split(",") if x] or list(range(args.n_tasks or n_tasks))
         jobs = [(i, args.suite, args.episodes, args.seed + i, args.policy, args.ckpt, args.verifier,
-                 args.n_cand, "", args.reward_ckpt, args.lambda_u, None) for i in ids]
+                 args.n_cand, dec_root, args.reward_ckpt, args.lambda_u, None) for i in ids]
         print(f"[eval] {args.suite}: tasks {ids if len(ids) < n_tasks else f'0..{n_tasks-1}'} × {args.episodes} eps, {args.workers} workers, policy={args.policy}")
 
     t0 = time.time()

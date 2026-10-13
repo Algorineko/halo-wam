@@ -1,0 +1,33 @@
+{
+  "meta": {
+    "suite": "libero_spatial",
+    "episodes": 1,
+    "workers": 1,
+    "policy": "haloact_v",
+    "ckpt": "checkpoints/act60k/best.pt",
+    "verifier": "checkpoints/e0v5/dyn_ens_k5_s2000.pt",
+    "n_cand": 5,
+    "reward_ckpt": "",
+    "lambda_u": 1.0,
+    "n_tasks": 1,
+    "task_ids": "",
+    "task_spec": "",
+    "log_decisions": true,
+    "seed": 0,
+    "wall_s": 26.0,
+    "ts": "2026-10-13T20:18:32.266440"
+  },
+  "results": [
+    {
+      "task": "task0",
+      "episodes": 1,
+      "success": 0,
+      "rate": 0.0,
+      "avg_steps": -1,
+      "wall_s": -1,
+      "error": true,
+      "stderr": ">\n  File \"/home/tione/notebook/home/arianliu/project/halo-wam/scripts/eval_libero_parallel.py\", line 157, in run_one_task\n    dec_log[\"sig5\"].append(stds.numpy().astype(np.float32))\nTypeError: can't convert cuda:0 device type tensor to numpy. Use Tensor.cpu() to copy the tensor to host memory first."
+    }
+  ],
+  "mean_rate": 0.0
+}
