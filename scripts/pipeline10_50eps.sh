@@ -2,7 +2,7 @@
 # pipeline10：审稿返修 50-eps 统计引擎（Phase 1，配对检验数据采集）
 # 双卡各 1 worker 串行队列（保守内存 ~22GB < 28 红线）；每格幂等 done 标记
 # λ 族（0.25/0.5/1.0/reward-only）待 reward 头方向验证后由 cron 追加到 card0 队列
-set -u
+set +u  # dtk env.sh 有未绑定变量，禁 -u（skill 铁律）
 P=/home/tione/notebook/home/arianliu/project/halo-wam
 cd "$P"
 source "$P/scripts/env.sh"
