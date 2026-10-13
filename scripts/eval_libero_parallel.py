@@ -53,7 +53,7 @@ def run_one_task(args):
 
     pol = None
     verifier_scorer = None
-    if policy in ("haloact", "haloact_v", "haloact_h"):
+    if policy in ("haloact", "haloact_v", "haloact_h", "haloact_r"):
         import sys
 
         sys.path.insert(0, "/home/tione/notebook/home/arianliu/project/halo-wam/src")
@@ -76,7 +76,7 @@ def run_one_task(args):
         # DINOv2 特征走 GPU（card 0），CPU 每 chunk 提特征太慢
         pol = HaloACTD(dim=ck["args"].get("dim", 256), chunk=ck["args"]["chunk"], n_tasks=len(vocab), act_dim=7).cuda().eval()
         pol.load_state_dict(ck["model"])
-    if policy in ("haloact_v", "haloact_h"):
+    if policy in ("haloact_v", "haloact_h", "haloact_r"):
         import sys
 
         sys.path.insert(0, "/home/tione/notebook/home/arianliu/project/halo-wam/src")
@@ -115,7 +115,7 @@ def run_one_task(args):
         while not done and step < 500:  # LIBERO 上限 500 步（robosuite horizon）
             if policy == "random":
                 action = rng.uniform(-1, 1, env.env.action_dim)
-            elif policy in ("haloact_v", "haloact_h"):
+            elif policy in ("haloact_v", "haloact_h", "haloact_r"):
                 if not act_queue:
                     state = np.concatenate([obs["robot0_joint_pos"], obs["robot0_gripper_qpos"][:1]])
                     tid = torch.tensor([vocab[task.name]])
@@ -145,7 +145,7 @@ def run_one_task(args):
                             scores = rewards - float(lambda_u) * stds  # 完整 HALO 打分
                         else:
                             scores = stds
-                        best = int(scores.argmin())
+                        best = int(rng.randint(cand_acts.shape[0])) if policy == "haloact_r" else int(scores.argmin())
                     act_queue = cands[best].tolist()
                 action = np.array(act_queue.pop(0))[: env.env.action_dim]
                 obs, _, done, _ = env.step(action)
@@ -224,7 +224,7 @@ def main():
     p.add_argument("--suite", type=str, default="libero_spatial")
     p.add_argument("--episodes", type=int, default=5)
     p.add_argument("--workers", type=int, default=32)
-    p.add_argument("--policy", type=str, default="random", choices=["random", "haloact", "haloact_v", "haloact_h", "haloact_d"])
+    p.add_argument("--policy", type=str, default="random", choices=["random", "haloact", "haloact_v", "haloact_h", "haloact_d", "haloact_r"])
     p.add_argument("--ckpt", type=str, default="", help="smolvla checkpoint 目录")
     p.add_argument("--verifier", type=str, default="", help="E0 动态头 checkpoint（smolvla_v 用）")
     p.add_argument("--n-cand", type=int, default=5, help="best-of-N 候选数")
