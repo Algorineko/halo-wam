@@ -18,8 +18,10 @@
 - **LIBERO 每任务恰 50 init states** → 50-eps 打满 + 跨臂天然配对（McNemar 功效）
 
 ### Phase 1 收数（2026-10-14 晨起滚动更新）
-- **obj_v50（object BoN-5, 50-eps）= 4.8%**（10-eps 时 4.0%，负收益方向大样本稳定）；
-  待 obj_base50 配对（CPU 流跑中）——审稿 II.1 的Powered 重跑首格
+- **object suite 50-eps 配对定论（预注册规则首跑）**：base 5.0% → BoN 4.8%，
+  Δ=−0.20pp，配对 95% CI [−2.40, +2.00] → **统计零效应**；LOTO [−0.4, 0.0] 无单任务驱动
+- **重大叙事修正**：10-eps 的 "7%→4% 负收益 −43%" 系小样本噪声（审稿 II.1 全对）——
+  C4 从"主动伤害"降级为"能力性 regime 零效应"，假说简化为 有效/无效 二元（更干净）
 - 流水：GPU 臂 spatial 8/10 / object ✅；CPU 双流 sp_base/obj_base 各 ~5/10
 
 ### 跑中（pipeline10，双卡各 1w 串行队列，~22GB）
