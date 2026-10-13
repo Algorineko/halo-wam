@@ -1,13 +1,18 @@
 {
-  "policy_chunk_ms": 320.02,
+  "policy_chunk_ms": 355.22,
   "score_ms_by_ncand": {
-    "1": 76.01,
-    "3": 316.61,
-    "5": 311.37,
-    "10": 347.58
+    "1": 73.41,
+    "3": 313.89,
+    "5": 308.71,
+    "10": 344.66
   },
-  "per_decision_ms_n5": 631.39,
-  "per_candidate_ms_n5": 62.27,
+  "score_decomp_n5": {
+    "ctx_encode_ms": 41.85,
+    "ens_forward_ms": 266.23,
+    "sum": 308.08
+  },
+  "per_decision_ms_n5": 663.93,
+  "per_candidate_ms_n5": 61.74,
   "note": "score \u542b ctx \u91cd\u7f16\u7801\uff08\u4fdd\u5b88\u4e0a\u754c\uff1b\u90e8\u7f72\u53ef\u7f13\u5b58 ctx\uff0c\u4ec5 ens \u524d\u5411\u66f4\u4f4e\uff09",
   "env": {
     "device": "BW1000_H",

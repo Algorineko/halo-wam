@@ -72,6 +72,29 @@ def main():
             torch.cuda.synchronize()
             lat[n] = round((time.perf_counter() - t0) / 30 * 1000, 2)
     res["score_ms_by_ncand"] = lat
+
+    # ---- D. 打分分解（n=5）：ctx 编码 vs ens 前向（缓存下界，RoVer 式缓存参照）----
+    cands5 = torch.randn(5, 13, 7).clamp(-1, 1)
+    with torch.inference_mode():
+        latents = enc.encode(obs.unsqueeze(0).to(DEV))
+        ctx5 = latents.reshape(1, -1, 1024).expand(5, -1, -1)
+        with torch.autocast("cuda", dtype=torch.bfloat16):
+            ens(ctx5, cands5.to(DEV).to(ctx5.dtype))
+        torch.cuda.synchronize()
+        t0 = time.perf_counter()
+        for _ in range(30):
+            enc.encode(obs.unsqueeze(0).to(DEV))
+        torch.cuda.synchronize()
+        enc_ms = (time.perf_counter() - t0) / 30 * 1000
+        t0 = time.perf_counter()
+        for _ in range(30):
+            with torch.autocast("cuda", dtype=torch.bfloat16):
+                ens(ctx5, cands5.to(DEV).to(ctx5.dtype))
+        torch.cuda.synchronize()
+        ens_ms = (time.perf_counter() - t0) / 30 * 1000
+    res["score_decomp_n5"] = {"ctx_encode_ms": round(enc_ms, 2),
+                              "ens_forward_ms": round(ens_ms, 2),
+                              "sum": round(enc_ms + ens_ms, 2)}
     res["per_decision_ms_n5"] = round(res["policy_chunk_ms"] + lat[5], 2)
     res["per_candidate_ms_n5"] = round(lat[5] / 5, 2)
     res["note"] = "score 含 ctx 重编码（保守上界；部署可缓存 ctx，仅 ens 前向更低）"
