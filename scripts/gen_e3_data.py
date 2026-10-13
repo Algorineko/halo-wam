@@ -49,7 +49,7 @@ def main():
     pol_ck = torch.load(args.policy, map_location="cpu", weights_only=False)
     vocab = pol_ck["vocab"]
     pol = HaloACT(dim=pol_ck["args"].get("dim", 256), chunk=pol_ck["args"]["chunk"],
-                  n_tasks=len(vocab), act_dim=7).to(dev).eval()
+                  n_tasks=pol_ck["args"].get("n_tasks", len(vocab)), act_dim=7).to(dev).eval()
     pol.load_state_dict(pol_ck["model"])
 
     enc = HaloEncoder(device=dev)
