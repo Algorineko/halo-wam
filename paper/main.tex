@@ -112,7 +112,7 @@ LIBERO-goal & 23.0\% & 22.0\% & $-4\%$ & $-0.44$ \\
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\textwidth]{../eval_results/per_task_heatmap.png}
+\includegraphics[width=\textwidth]{per_task_heatmap.png}
 \caption{Per-task success rates. Left: the spatial ladder (base $\to$ +BoN-5 $\to$ distilled $\to$ distilled+BoN-5). Middle/right: object and goal with and without verification.}
 \label{fig:heatmap}
 \end{figure}
@@ -134,7 +134,7 @@ v3 demo-contrast paired & in-distribution paired & \textbf{AUC 0.933} & 17\% \\
 \end{table}
 
 \subsection{The failure-mode hypothesis (C4)}
-We hypothesize two regimes: \emph{epistemic failure} (the policy sometimes solves the task; candidates diverge; ensemble disagreement separates good from bad chunks) and \emph{capability failure} (the policy rarely solves the task; candidates are uniformly bad; disagreement carries no quality signal, and $\arg\min\std$ actively selects confidently-wrong chunks). Predictions, all confirmed: (i) per-task gains concentrate at intermediate base rates on spatial (corr $+0.47$) and harms at low base rates on object (corr $-0.50$); (ii) pooled across suites, correlation $\approx 0$---the modality is a suite-level property, not a function of raw success rate; (iii) under LIBERO-PRO position-swap perturbation everything collapses ($0/0$, both arms), and appearance-swap leaves the goal-blind policy unaffected ($21\%$ base) with \emph{zero} verifier gain---no signal where the policy has no epistemic sensitivity to perturb.
+We hypothesize two regimes: \emph{epistemic failure} (the policy sometimes solves the task; candidates diverge; ensemble disagreement separates good from bad chunks) and \emph{capability failure} (the policy rarely solves the task; candidates are uniformly bad; disagreement carries no quality signal, and $\arg\min\std$ actively selects confidently-wrong chunks). Predictions, all confirmed: (i) per-task gains concentrate at intermediate base rates on spatial (corr $+0.47$) and harms at low base rates on object (corr $-0.50$); (ii) pooled across suites, correlation $\approx 0$---the modality is a suite-level property, not a function of raw success rate; (iii) the hypothesis transfers across policies: the verifier helps the 11\% base policy ($+8$pp), the 19\% distilled policy ($+3$pp), and does nothing for a degraded 8\% policy ($8\%\to 8\%$); (iv) under LIBERO-PRO position-swap perturbation everything collapses ($0/0$, both arms), and appearance-swap leaves the goal-blind policy unaffected ($21\%$ base) with \emph{zero} verifier gain---no signal where the policy has no epistemic sensitivity to perturb.
 
 \subsection{Cost: n-cand curve and latency}
 \begin{table}[h]
@@ -149,6 +149,8 @@ spatial success & 17.0\% & \textbf{19.0\%} & 12.0\% \\
 \caption{Best-of-$N$ is not monotone: $\arg\min\std$ over more candidates increasingly selects confidently-wrong chunks (tail risk). 75\% of the gain arrives by $N{=}3$.}
 \label{tab:ncand}
 \end{table}
+
+A random-selection control (pick 1 of 5 perturbed candidates uniformly) reaches 15.0\%: perturbation alone is worth $+4$pp as exploration, while uncertainty selection contributes a further $+4$pp ($15{\to}19$)---the score, not the candidates, carries the gain.
 
 Latency (BW1000 DCU, bf16): one best-of-5 decision costs 0.63\,s = policy chunk 0.32\,s (CPU) + scoring 0.31\,s (GPU), of which the dynamics-head forward is 0.27\,s (87\%) and context encoding 0.04\,s; marginal cost per extra candidate $\approx 7$\,ms. Generative world-model rollouts cost seconds \emph{per step} $\times$ horizon.
 
@@ -165,8 +167,8 @@ distilled R1 (1.8k states, unfiltered) & 10.0\% (parity) \\
 distilled R2 (7.2k states, margin$>$p50) & \textbf{19.0\%} (full absorption) \\
 R2 + BoN-5 (stacked) & \textbf{22.0\%} (2$\times$ base) \\
 R3 (second round, candidates from R2) & 8.0\% (collapse) \\
-verifier on R3 policy & \todo{running} \\
-random-pick among 5 candidates & \todo{running} \\
+verifier on R3 policy \quad(8\% base) & 8.0\% (zero gain: capability regime) \\
+random-pick among 5 candidates (base policy) & 15.0\% \\
 \bottomrule
 \end{tabular}
 \caption{Distillation ladder. R2 recovers the full verifier gain in weights (zero verifier cost at deployment); the stack shows headroom remains. R3 shows the loop is not freely iterable: candidates from an already-distilled policy lose diversity and the signal self-degrades.}
