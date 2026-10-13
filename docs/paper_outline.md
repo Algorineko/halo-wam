@@ -52,9 +52,12 @@
   "Can We Detect Failures Without Failure Data?"（2025-06，不确定性失败检测——只做检测不做动作选择，我们补上 best-of-N 增益）
 - WM 后训练: WMPO / HaWMPO（reward hacking 案例=我们动机）
 - 基准: LIBERO 饱和 → LIBERO-PRO（我们的 OOD 轴）；World Models for Robotic Manipulation Survey（2026-05，related work 框架）
-- **2026-10-12 复查结论：无直接撞车（frozen V-JEPA2 + action-contrast 动态头 + ensemble std
-  做 best-of-N + 分布内边界刻画仍空缺），但赛道升温 → 引言动机更强、区分度段落要硬**
-  （待精读：RoVer / AtomVLA / Can-We-Detect-Failures 三篇）
+- **2026-10-13 三篇已精读**（详笔记 docs/related_work_notes.md）：
+  RoVer=习得 PRM+方向细化（我们免训练不确定性+边界刻画）；AtomVLA=goal-referenced
+  WM 打分内嵌专属管线（我们 goal-free+policy-agnostic 外挂）；FAIL-Detect=不确定性被动报警
+  +conformal 保证（我们主动选择+实测增益，C4 是其适用条件警告）。**无撞车维持**；
+  Intro 缺口句：现有 verifier 要么习得奖励（RoVer）要么 goal-referenced（AtomVLA）——
+  免训练、goal-free、不确定性感知者缺位
 
 ## 3 Method
 - 3.1 固定窗口相对编码协议（V-JEPA 2 无绝对位置嵌入；同内容跨上下文 cos≈0.55 的伪影分析）
