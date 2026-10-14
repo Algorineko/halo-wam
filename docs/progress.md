@@ -35,6 +35,8 @@
 - 可证伪预测：random-pick ≈ consensus ≈ BoN ≈ base（跑批格验证中）
 - **领域级含义**：微扰候选生成是文献标准做法——若竞品同款，则"候选多样性不足"
   是整个 verifier 赛道的系统性审计发现（审计论文的核心机制章）
+- **跨 suite 一致（合计 35,902 决策）**：object 18,845 决策对距 0.258 / 选中=首候选 82.6%，
+  与 spatial（0.262 / 78.3%）逐位一致——机制是候选生成协议的系统性属性，非 suite 偶然
 - 同期检索（10-14）：审计论点无撞车（检索明确报告无 replication 类工作）；
   新引用：Evaluation Bottleneck 综述（582篇，动机）、Toyota 统计评估框架（方法论同盟）、
   Decision-Critical Verifier Learning 2610.04933（竞品清单）、Pathak 2019（σ 源头）
